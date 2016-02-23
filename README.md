@@ -60,8 +60,6 @@ Below are quick install instructions and a Youtube video that walk you through t
 
 ### Windows
 
-<iframe allowfullscreen="allowfullscreen" src="https://www.youtube.com/embed/LiyVf4wC0mg" frameborder="0" height="315" width="420"></iframe>
-
 1.  Download the latest version of the Intrinio Excel add-in by clicking on the link above.
 2.  The Intrinio Excel add-in will be saved as an Application in your Downloads folder. Find it there, and double click on it.
 3.  You'll see a pop-up titled "Intrinio Excel Add-in". Check the box to agree to the terms and conditions, then click "Install".
@@ -73,8 +71,6 @@ Below are quick install instructions and a Youtube video that walk you through t
 9.  You can begin by building your own spreadsheet or by opening a template.
 
 ### Mac OS
-
-<iframe allowfullscreen="allowfullscreen" src="https://www.youtube.com/embed/tptSG9epqjA" frameborder="0" height="315" width="420"></iframe>
 
 1.  Download the latest version of the Intrinio Excel add-in by clicking on the link above.
 2.  Extract the Intrinio Excel add-in zip file to a folder on your hard drive. (On Mac OS X it may automatically extract it for you.)
