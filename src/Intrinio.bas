@@ -25,7 +25,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://www.intrinio.com/api"
-Public Const Intrinio_Addin_Version = "2.3.1"
+Public Const Intrinio_Addin_Version = "2.3.2"
 
 Public Sub IntrinioInitialize()
     Dim File_Num As Long
@@ -818,7 +818,7 @@ Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
                 If Item = "date" Then
                     IntrinioHistoricalPrices = VBA.DateValue(IntrinioHistoricalPrices)
                 Else
-                    IntrinioHistoricalPrices = VBA.Round(IntrinioHistoricalPrices * 1, 2)
+                    IntrinioHistoricalPrices = VBA.Round(IntrinioHistoricalPrices * 1, 4)
                 End If
             ElseIf Response.StatusCode = 403 Then
                 APICallsAtLimit = True
@@ -834,7 +834,7 @@ Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             If Item = "date" Then
                 IntrinioHistoricalPrices = VBA.DateValue(IntrinioHistoricalPrices)
             Else
-                IntrinioHistoricalPrices = VBA.Round(IntrinioHistoricalPrices * 1, 2)
+                IntrinioHistoricalPrices = VBA.Round(IntrinioHistoricalPrices * 1, 4)
             End If
             
         End If
@@ -980,7 +980,7 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
                     IntrinioHistoricalData = VBA.DateValue(IntrinioHistoricalData)
                 ElseIf show_date = False Then
                     IntrinioHistoricalData = HistoricalDataDic(Key)(sequence + 1)("value")
-                    IntrinioHistoricalData = VBA.Round(IntrinioHistoricalData * 1, 2)
+                    IntrinioHistoricalData = VBA.Round(IntrinioHistoricalData * 1, 4)
                 End If
                 If IntrinioHistoricalData = Empty Then
                     IntrinioHistoricalData = ""
@@ -997,7 +997,7 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioHistoricalData = VBA.DateValue(IntrinioHistoricalData)
             ElseIf show_date = False Then
                 IntrinioHistoricalData = HistoricalDataDic(Key)(sequence + 1)("value")
-                IntrinioHistoricalData = VBA.Round(IntrinioHistoricalData * 1, 2)
+                IntrinioHistoricalData = VBA.Round(IntrinioHistoricalData * 1, 4)
             End If
             If IntrinioHistoricalData = Empty Then
                 IntrinioHistoricalData = ""
@@ -1017,7 +1017,7 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
                     IntrinioHistoricalData = VBA.DateValue(IntrinioHistoricalData)
                 ElseIf show_date = False Then
                     IntrinioHistoricalData = HistoricalDataDic(Key)(sequence + 1)("value")
-                    IntrinioHistoricalData = VBA.Round(IntrinioHistoricalData * 1, 2)
+                    IntrinioHistoricalData = VBA.Round(IntrinioHistoricalData * 1, 4)
                 End If
                 If IntrinioHistoricalData = Empty Then
                     IntrinioHistoricalData = ""
@@ -2331,6 +2331,7 @@ Sub IntrinioRibbon()
     Dim XPos1 As Long, XPos2 As Long, XPos3 As Long, XPos4 As Long, XPos5 As Long, X As Long
     Dim refresh As Boolean
   
+    On Error GoTo ErrorHandler
     
     #If Win32 Or Win64 Then
         refresh = False
@@ -2418,6 +2419,79 @@ Sub IntrinioRibbon()
             
         End If
     #End If
+ExitHere:
+    Exit Sub
+ErrorHandler:
+    #If Win32 Or Win64 Then
+        hFile = FreeFile
+        appdata = Environ("LOCALAPPDATA")
+        path = appdata & "\Microsoft\Office\"
+        fileName = "Excel.officeUI"
+        
+        FilePath = path & fileName
+    
+        If FileOrDirExists(FilePath) Then
+            SetAttr FilePath, vbNormal
+            Kill FilePath
+            
+            ribbonXML = "<mso:customUI xmlns:mso=" & Chr(34) & "http://schemas.microsoft.com/office/2009/07/customui" & Chr(34) & ">"
+            ribbonXML = ribbonXML + "<mso:ribbon>"
+            ribbonXML = ribbonXML + "<mso:qat></mso:qat>"
+            ribbonXML = ribbonXML + "<mso:tabs>"
+            ribbonXML = ribbonXML + "<mso:tab id=" & Chr(34) & "intrinioTab" & Chr(34) & " label=" & Chr(34) & "Intrinio" & Chr(34) & " insertBeforeQ=" & Chr(34) & "mso:TabFormat" & Chr(34) & ">"
+            ribbonXML = ribbonXML + "<mso:group id=" & Chr(34) & "intrinioGroup" & Chr(34) & " label=" & Chr(34) & "Intrinio Add-in" & Chr(34) & " autoScale=" & Chr(34) & "true" & Chr(34) & ">"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "apiKeys" & Chr(34) & " label=" & Chr(34) & "API Keys" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "DatabaseMakeMdeFile" & Chr(34) & " onAction=" & Chr(34) & "IntrinioAPIKeys" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "refreshData" & Chr(34) & " label=" & Chr(34) & "Refresh Data" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "RecurrenceEdit" & Chr(34) & " onAction=" & Chr(34) & "IntrinioRefresh" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "openTemplate" & Chr(34) & " label=" & Chr(34) & "Intrinio Templates" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "FilePublishExcelServices" & Chr(34) & " onAction=" & Chr(34) & "IntrinioTemplates" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "unlinkAddin" & Chr(34) & " label=" & Chr(34) & "Unlink Add-in" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "DatabaseObjectDependencies" & Chr(34) & " onAction=" & Chr(34) & "IntrinioUnlink" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "checkUpdate" & Chr(34) & " label=" & Chr(34) & "Check for Update" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "PageMenu" & Chr(34) & " onAction=" & Chr(34) & "IntrinioUpdate" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "helpMe" & Chr(34) & " label=" & Chr(34) & "Help" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "FunctionsLogicalInsertGallery" & Chr(34) & " onAction=" & Chr(34) & "IntrinioHelp" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "</mso:group>"
+            ribbonXML = ribbonXML + "</mso:tab>"
+            ribbonXML = ribbonXML + "</mso:tabs>"
+            ribbonXML = ribbonXML + "</mso:ribbon>"
+            ribbonXML = ribbonXML + "</mso:customUI>"
+            
+            Open path & fileName For Output Access Write As hFile
+            Print #hFile, ribbonXML
+            Close hFile
+        Else
+            ribbonXML = "<mso:customUI xmlns:mso=" & Chr(34) & "http://schemas.microsoft.com/office/2009/07/customui" & Chr(34) & ">"
+            ribbonXML = ribbonXML + "<mso:ribbon>"
+            ribbonXML = ribbonXML + "<mso:qat></mso:qat>"
+            ribbonXML = ribbonXML + "<mso:tabs>"
+            ribbonXML = ribbonXML + "<mso:tab id=" & Chr(34) & "intrinioTab" & Chr(34) & " label=" & Chr(34) & "Intrinio" & Chr(34) & " insertBeforeQ=" & Chr(34) & "mso:TabFormat" & Chr(34) & ">"
+            ribbonXML = ribbonXML + "<mso:group id=" & Chr(34) & "intrinioGroup" & Chr(34) & " label=" & Chr(34) & "Intrinio Add-in" & Chr(34) & " autoScale=" & Chr(34) & "true" & Chr(34) & ">"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "apiKeys" & Chr(34) & " label=" & Chr(34) & "API Keys" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "DatabaseMakeMdeFile" & Chr(34) & " onAction=" & Chr(34) & "IntrinioAPIKeys" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "refreshData" & Chr(34) & " label=" & Chr(34) & "Refresh Data" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "RecurrenceEdit" & Chr(34) & " onAction=" & Chr(34) & "IntrinioRefresh" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "openTemplate" & Chr(34) & " label=" & Chr(34) & "Intrinio Templates" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "FilePublishExcelServices" & Chr(34) & " onAction=" & Chr(34) & "IntrinioTemplates" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "unlinkAddin" & Chr(34) & " label=" & Chr(34) & "Unlink Add-in" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "DatabaseObjectDependencies" & Chr(34) & " onAction=" & Chr(34) & "IntrinioUnlink" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "checkUpdate" & Chr(34) & " label=" & Chr(34) & "Check for Update" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "PageMenu" & Chr(34) & " onAction=" & Chr(34) & "IntrinioUpdate" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "<mso:button id=" & Chr(34) & "helpMe" & Chr(34) & " label=" & Chr(34) & "Help" & Chr(34) & " "
+            ribbonXML = ribbonXML + "imageMso=" & Chr(34) & "FunctionsLogicalInsertGallery" & Chr(34) & " onAction=" & Chr(34) & "IntrinioHelp" & Chr(34) & "/>"
+            ribbonXML = ribbonXML + "</mso:group>"
+            ribbonXML = ribbonXML + "</mso:tab>"
+            ribbonXML = ribbonXML + "</mso:tabs>"
+            ribbonXML = ribbonXML + "</mso:ribbon>"
+            ribbonXML = ribbonXML + "</mso:customUI>"
+            
+            Open path & fileName For Output Access Write As hFile
+            Print #hFile, ribbonXML
+            Close hFile
+        End If
+    #End If
+    Exit Sub
 End Sub
 
 Sub IntrinioResetRibbon()
