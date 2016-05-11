@@ -3,6 +3,7 @@ Option Explicit
 
 Public CompanyDic As New Dictionary
 Public SecuritiesDic As New Dictionary
+Public BankDic As New Dictionary
 Public DataPointDic As New Dictionary
 Public HistoricalPricesDic As New Dictionary
 Public HistoricalDataDic As New Dictionary
@@ -13,6 +14,9 @@ Public StandardizedTagsDic As New Dictionary
 Public ReportedFundamentalsDic As New Dictionary
 Public ReportedFinancialsDic As New Dictionary
 Public ReportedTagsDic As New Dictionary
+Public BankFundamentalsDic As New Dictionary
+Public BankFinancialsDic As New Dictionary
+Public BankTagsDic As New Dictionary
 
 Private CompanySuccessDic As New Dictionary
 Public DataPointRequestedTags As New Dictionary
@@ -25,9 +29,10 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://www.intrinio.com/api"
-Public Const Intrinio_Addin_Version = "2.3.2"
+Public Const Intrinio_Addin_Version = "2.4.1"
 
 Public Sub IntrinioInitialize()
+
     Dim File_Num As Long
     Dim sInFolder As String, sInFile As String
     Dim i As Integer
@@ -55,6 +60,9 @@ Public Sub IntrinioInitialize()
         Call DescribeIntrinioReportedFundamentals
         Call DescribeIntrinioReportedTags
         Call DescribeIntrinioReportedFinancials
+        Call DescribeIntrinioBankFundamentals
+        Call DescribeIntrinioBankTags
+        Call DescribeIntrinioBankFinancials
         Call IntrinioRibbon
     #End If
     
@@ -193,7 +201,7 @@ Private Function IntrinioCompanies(ticker As String, Item As String)
             Dim Request As New WebRequest
             Request.Resource = "companies/verify"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             
             Dim Response As WebResponse
@@ -274,7 +282,7 @@ Private Function IntrinioSecurities(ticker As String, Item As String)
             Dim Request As New WebRequest
             Request.Resource = "securities/verify"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             
             Dim Response As WebResponse
@@ -326,6 +334,85 @@ ExitHere:
     Exit Function
 ErrorHandler:
     IntrinioSecurities = ""
+End Function
+
+
+Private Function IntrinioBanks(identifier As String, Item As String)
+    On Error GoTo ErrorHandler
+        
+    If identifier <> "" And LoginFailure = False And APICallsAtLimit = False Then
+        If BankDic.Exists(identifier) = False Then
+            Dim IntrinioClient As New WebClient
+            IntrinioClient.BaseUrl = BaseUrl
+            If iCredentials.Exists("username") = False Or iCredentials.Exists("password") = False Or iCredentials("username") = Empty Or iCredentials("password") = Empty Then
+                Call IntrinioInitialize
+            End If
+            
+            Dim inUsername As String
+            Dim inPassword As String
+            inUsername = iCredentials("username")
+            inPassword = iCredentials("password")
+            Dim Auth As New HttpBasicAuthenticator
+            Auth.Setup _
+                Username:=inUsername, _
+                Password:=inPassword
+            Set IntrinioClient.Authenticator = Auth
+
+            Dim Request As New WebRequest
+            Request.Resource = "banks/verify"
+            Request.Method = HttpGet
+            Request.Format = JSON
+            Request.AddQuerystringParam "identifier", identifier
+            
+            Dim Response As WebResponse
+            Set Response = IntrinioClient.Execute(Request)
+
+            If Response.StatusCode = ok Then
+                If Response.Data Is Nothing Then
+                    IntrinioBanks = ""
+                Else
+                    BankDic.Add Response.Data("identifier"), Response.Data
+                    If IsNull(BankDic(identifier)(Item)) Then
+                        IntrinioBanks = ""
+                    Else
+                        IntrinioBanks = BankDic(identifier)(Item)
+                    End If
+                End If
+            ElseIf Response.StatusCode = 403 Then
+                APICallsAtLimit = True
+                IntrinioBanks = "Plan Limit Reached"
+            Else
+                IntrinioBanks = ""
+            End If
+            
+        ElseIf BankDic.Exists(identifier) = True Then
+            If IsNull(BankDic(identifier)(Item)) Then
+                IntrinioBanks = ""
+            Else
+                IntrinioBanks = BankDic(identifier)(Item)
+            End If
+        End If
+    Else
+        If APICallsAtLimit = True Then
+            If BankDic.Exists(identifier) = True Then
+                If IsNull(BankDic(identifier)(Item)) Then
+                    IntrinioBanks = "Plan Limit Reached"
+                Else
+                    IntrinioBanks = BankDic(identifier)(Item)
+                End If
+            Else
+                IntrinioBanks = BankDic(identifier)(Item)
+            End If
+        ElseIf LoginFailure = True Then
+            IntrinioBanks = "Invalid API Keys"
+        Else
+            IntrinioBanks = ""
+        End If
+    End If
+ExitHere:
+    Exit Function
+ErrorHandler:
+    IntrinioBanks = ""
 End Function
 
 Sub DescribeIntrinioDataPoint()
@@ -389,8 +476,15 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
                         CompanySuccessDic.Add identifier, False
                         coFailure = CompanySuccessDic(identifier)
                     Else
-                        CompanySuccessDic.Add identifier, True
-                        coFailure = CompanySuccessDic(identifier)
+                        api_ticker = IntrinioBanks(identifier, "identifier")
+                        If api_ticker = identifier Then
+                            CompanySuccessDic.Add identifier, False
+                            coFailure = CompanySuccessDic(identifier)
+                        Else
+                            CompanySuccessDic.Add identifier, True
+                            coFailure = CompanySuccessDic(identifier)
+                        End If
+                        
                     End If
                 End If
                 
@@ -471,7 +565,7 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "data_point"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "identifier", identifier
             Request.AddQuerystringParam "item", tags
             
@@ -794,7 +888,7 @@ Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "prices"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             If start_date <> "" Then
                 Request.AddQuerystringParam "start_date", start_date
@@ -954,7 +1048,7 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "historical_data"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "item", Item
             If start_date <> "" Then
@@ -1120,7 +1214,7 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "news"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             
             Dim Response As WebResponse
@@ -1280,7 +1374,7 @@ Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "fundamentals/standardized"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
@@ -1433,7 +1527,7 @@ Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "tags/standardized"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             
@@ -1625,7 +1719,7 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Do Until is_last_page = True
                 Request.Resource = "financials/standardized"
                 Request.Method = HttpGet
-                Request.Format = Json
+                Request.Format = JSON
                 Request.AddQuerystringParam "ticker", ticker
                 Request.AddQuerystringParam "statement", statement
                 Request.AddQuerystringParam "fiscal_year", fiscal_year
@@ -1855,7 +1949,7 @@ Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "fundamentals/reported"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
@@ -1995,7 +2089,7 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "tags/reported"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "fiscal_year", fiscal_year
@@ -2174,7 +2268,7 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "financials/reported"
             Request.Method = HttpGet
-            Request.Format = Json
+            Request.Format = JSON
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "fiscal_year", fiscal_year
@@ -2263,6 +2357,496 @@ ErrorHandler:
     Resume Next
 End Function
 
+Sub DescribeIntrinioBankFundamentals()
+    Dim FuncName As String
+    Dim FuncDesc As String
+    Dim Category As String
+    Dim ArgDesc(1 To 5) As String
+    
+    FuncName = "IntrinioBankFundamentals"
+    FuncDesc = "Returns a banks financial statement fundamental based on a period type and sequence number selected."
+    Category = "Intrinio"
+    ArgDesc(1) = "The company's identifier (i.e. ticker symbol 'JPM' or RSSD ID '361354')"
+    ArgDesc(2) = "The financial statement selected ('RI')"
+    ArgDesc(3) = "The period type ('FY','QTR','YTD')"
+    ArgDesc(4) = "The sequence order of the fundamental from newest to oldest (0..last available)"
+    ArgDesc(5) = "The item you are selecting (i.e. 'fiscal_year' returns 2014, 'fiscal_period' returns 'FY', 'end_date' returns the last date of the period, 'start_date' returns the beginning of the period)"
+    
+    Application.MacroOptions Macro:=FuncName, _
+       Description:=FuncDesc, _
+       Category:=Category, _
+       ArgumentDescriptions:=ArgDesc
+End Sub
+
+
+Public Function IntrinioBankFundamentals(identifier As String, _
+                           statement As String, _
+                           period_type As String, _
+                           sequence As Integer, _
+                           Item As String)
+Attribute IntrinioBankFundamentals.VB_Description = "Returns a banks financial statement fundamental based on a period type and sequence number selected."
+Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
+    Dim Key As String
+    Dim api_identifier As String
+    Dim coFailure As Boolean
+    
+    On Error GoTo ErrorHandler
+    
+    If identifier <> "" And LoginFailure = False Then
+        If CompanySuccessDic.Exists(identifier) = False Then
+            api_identifier = IntrinioBanks(identifier, "identifier")
+            If api_identifier = identifier Then
+                CompanySuccessDic.Add identifier, False
+                coFailure = CompanySuccessDic(identifier)
+            Else
+                CompanySuccessDic.Add identifier, True
+                coFailure = CompanySuccessDic(identifier)
+            End If
+        Else
+            If APICallsAtLimit = False Then
+                coFailure = CompanySuccessDic(identifier)
+            Else
+                coFailure = False
+            End If
+        End If
+    End If
+    
+    If identifier <> "" And statement <> "" And period_type <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
+        Key = identifier & "_" & statement & "_" & period_type
+        
+        If BankFundamentalsDic.Exists(Key) = False Then
+            Dim IntrinioClient As New WebClient
+            IntrinioClient.BaseUrl = BaseUrl
+            If iCredentials.Exists("username") = False Or iCredentials.Exists("password") = False Or iCredentials("username") = Empty Or iCredentials("password") = Empty Then
+                Call IntrinioInitialize
+            End If
+            
+            Dim inUsername As String
+            Dim inPassword As String
+            inUsername = iCredentials("username")
+            inPassword = iCredentials("password")
+            Dim Auth As New HttpBasicAuthenticator
+            Auth.Setup _
+                Username:=inUsername, _
+                Password:=inPassword
+            Set IntrinioClient.Authenticator = Auth
+            
+            Dim Request As New WebRequest
+            Request.Resource = "fundamentals/banks"
+            Request.Method = HttpGet
+            Request.Format = JSON
+            Request.AddQuerystringParam "identifier", identifier
+            Request.AddQuerystringParam "statement", statement
+            Request.AddQuerystringParam "type", period_type
+            
+            Dim Response As WebResponse
+            Set Response = IntrinioClient.Execute(Request)
+            
+            If Response.StatusCode = ok Then
+                BankFundamentalsDic.Add Key, Response.Data("data")
+                IntrinioBankFundamentals = BankFundamentalsDic(Key)(sequence + 1)(Item)
+            ElseIf Response.StatusCode = 403 Then
+                APICallsAtLimit = True
+                IntrinioBankFundamentals = "Plan Limit Reached"
+            Else
+                IntrinioBankFundamentals = ""
+            End If
+        ElseIf BankFundamentalsDic.Exists(Key) = True Then
+            IntrinioBankFundamentals = BankFundamentalsDic(Key)(sequence + 1)(Item)
+        End If
+    Else
+        If APICallsAtLimit = True Then
+            Key = identifier & "_" & statement & "_" & period_type
+            If BankFundamentalsDic.Exists(Key) = True Then
+                IntrinioBankFundamentals = BankFundamentalsDic(Key)(sequence + 1)(Item)
+            Else
+                IntrinioBankFundamentals = "Plan Limit Reached"
+            End If
+        ElseIf LoginFailure = True Then
+            IntrinioBankFundamentals = "Invalid API Keys"
+        ElseIf coFailure = True Then
+            IntrinioBankFundamentals = "Invalid identifier Symbol"
+        Else
+            IntrinioBankFundamentals = ""
+        End If
+    End If
+ExitHere:
+    Exit Function
+ErrorHandler:
+    IntrinioBankFundamentals = ""
+End Function
+
+
+Sub DescribeIntrinioBankTags()
+    Dim FuncName As String
+    Dim FuncDesc As String
+    Dim Category As String
+    Dim ArgDesc(1 To 4) As String
+    
+    FuncName = "IntrinioBankTags"
+    FuncDesc = "Returns a bank tag for a selected bank and financial statement, by selecting a specific tag based on the sequence number selected."
+    Category = "Intrinio"
+    ArgDesc(1) = "The banks's Identifier (i.e. ticker symbol 'JPM' or RSSD ID '361354')"
+    ArgDesc(2) = "The financial statement selected"
+    ArgDesc(3) = "The sequence order of the tag from first to last (0..last available)"
+    ArgDesc(4) = "The item you are selecting (i.e. 'name' returns the human readable name, 'tag' returns the Bank tag, 'balance' returns debit or credit, 'unit' returns the units for the tag)"
+    
+    Application.MacroOptions Macro:=FuncName, _
+       Description:=FuncDesc, _
+       Category:=Category, _
+       ArgumentDescriptions:=ArgDesc
+End Sub
+
+
+Public Function IntrinioBankTags(identifier As String, _
+                           statement As String, _
+                           sequence As Integer, _
+                           Item As String)
+Attribute IntrinioBankTags.VB_Description = "Returns a bank tag for a selected bank and financial statement, by selecting a specific tag based on the sequence number selected."
+Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
+    Dim Key As String
+    Dim api_identifier As String
+    Dim coFailure As Boolean
+    
+    On Error GoTo ErrorHandler
+    
+    identifier = VBA.UCase(identifier)
+    
+    If identifier <> "" And LoginFailure = False Then
+        If CompanySuccessDic.Exists(identifier) = False Then
+            api_identifier = IntrinioBanks(identifier, "identifier")
+            If api_identifier = identifier Then
+                CompanySuccessDic.Add identifier, False
+                coFailure = CompanySuccessDic(identifier)
+            Else
+                CompanySuccessDic.Add identifier, True
+                coFailure = CompanySuccessDic(identifier)
+            End If
+        Else
+            If APICallsAtLimit = False Then
+                coFailure = CompanySuccessDic(identifier)
+            Else
+                coFailure = False
+            End If
+        End If
+    End If
+    
+    If identifier <> "" And statement <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
+        Key = identifier & "_" & statement
+        
+        If BankTagsDic.Exists(Key) = False Then
+            Dim IntrinioClient As New WebClient
+            IntrinioClient.BaseUrl = BaseUrl
+            If iCredentials.Exists("username") = False Or iCredentials.Exists("password") = False Or iCredentials("username") = Empty Or iCredentials("password") = Empty Then
+                Call IntrinioInitialize
+            End If
+            
+            Dim inUsername As String
+            Dim inPassword As String
+            inUsername = iCredentials("username")
+            inPassword = iCredentials("password")
+            Dim Auth As New HttpBasicAuthenticator
+            Auth.Setup _
+                Username:=inUsername, _
+                Password:=inPassword
+            Set IntrinioClient.Authenticator = Auth
+            
+            Dim Request As New WebRequest
+            Request.Resource = "tags/banks"
+            Request.Method = HttpGet
+            Request.Format = JSON
+            Request.AddQuerystringParam "identifier", identifier
+            Request.AddQuerystringParam "statement", statement
+            
+            Dim Response As WebResponse
+            Set Response = IntrinioClient.Execute(Request)
+
+            If Response.StatusCode = ok Then
+                BankTagsDic.Add Key, Response.Data("data")
+                IntrinioBankTags = BankTagsDic(Key)(sequence + 1)(Item)
+            ElseIf Response.StatusCode = 403 Then
+                APICallsAtLimit = True
+                IntrinioBankTags = "Plan Limit Reached"
+            Else
+                IntrinioBankTags = ""
+            End If
+        ElseIf BankTagsDic.Exists(Key) = True Then
+            IntrinioBankTags = BankTagsDic(Key)(sequence + 1)(Item)
+        End If
+    Else
+        If APICallsAtLimit = True Then
+            Key = identifier & "_" & statement
+            
+            If BankTagsDic.Exists(Key) = True Then
+            IntrinioBankTags = BankTagsDic(Key)(sequence + 1)(Item)
+            Else
+                IntrinioBankTags = "Plan Limit Reached"
+            End If
+            
+        ElseIf LoginFailure = True Then
+            IntrinioBankTags = "Invalid API Keys"
+        ElseIf coFailure = True Then
+            IntrinioBankTags = "Invalid identifier Symbol"
+        Else
+            IntrinioBankTags = ""
+        End If
+    End If
+ExitHere:
+    Exit Function
+ErrorHandler:
+    IntrinioBankTags = ""
+End Function
+
+
+Sub DescribeIntrinioBankFinancials()
+    Dim FuncName As String
+    Dim FuncDesc As String
+    Dim Category As String
+    Dim ArgDesc(1 To 6) As String
+    
+    FuncName = "IntrinioBankFinancials"
+    FuncDesc = "Returns historical financial statement data point for a bank, based on the tag, fiscal year and fiscal period."
+    Category = "Intrinio"
+    ArgDesc(1) = "The company's identifier (i.e. ticker symbol 'JPM' or RSSD ID '749635')"
+    ArgDesc(2) = "The financial statement selected"
+    ArgDesc(3) = "The selected fiscal year for the chosen statement (i.e. 2014, 2013, 2012, etc.)"
+    ArgDesc(4) = "The selected fiscal period for the chosen statement ('FY', 'Q1', 'Q2', 'Q3', 'Q2YTD', 'Q3YTD')"
+    ArgDesc(5) = "The selected tag contained within the statement"
+    ArgDesc(6) = "(Optional) Round the value (blank or 'A' for actuals, 'K' for thousands, 'M' for millions, 'B' for billions)"
+    
+    Application.MacroOptions Macro:=FuncName, _
+       Description:=FuncDesc, _
+       Category:=Category, _
+       ArgumentDescriptions:=ArgDesc
+End Sub
+
+
+Public Function IntrinioBankFinancials(identifier As String, _
+                           statement As String, _
+                           fiscal_year As Integer, _
+                           fiscal_period As String, _
+                           tag As String, _
+                           Optional rounding As String = "A")
+Attribute IntrinioBankFinancials.VB_Description = "Returns historical financial statement data point for a bank, based on the tag, fiscal year and fiscal period."
+Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
+                           
+    Dim Key As String
+    Dim eKey As String
+    Dim nKey As String
+    Dim X As Variant
+    Dim rTag As String
+    Dim rValue As Double
+    Dim sValue As String
+    Dim Value As Double
+    Dim Rounder As Double
+    Dim api_identifier As String
+    Dim coFailure As Boolean
+    Dim fundamental_sequence As Integer
+    Dim fundamental_type As String
+    
+    On Error GoTo ErrorHandler
+    
+    identifier = VBA.UCase(identifier)
+    
+    If identifier <> "" And LoginFailure = False Then
+        If CompanySuccessDic.Exists(identifier) = False Then
+            api_identifier = IntrinioBanks(identifier, "identifier")
+            If api_identifier = identifier Then
+                CompanySuccessDic.Add identifier, False
+                coFailure = CompanySuccessDic(identifier)
+            Else
+                api_identifier = IntrinioSecurities(identifier, "identifier")
+                If api_identifier = identifier Then
+                    CompanySuccessDic.Add identifier, False
+                    coFailure = CompanySuccessDic(identifier)
+                Else
+                    CompanySuccessDic.Add identifier, True
+                    coFailure = CompanySuccessDic(identifier)
+                End If
+            End If
+        Else
+            If APICallsAtLimit = False Then
+                coFailure = CompanySuccessDic(identifier)
+            Else
+                coFailure = False
+            End If
+        End If
+    End If
+    
+    
+    If identifier <> "" And statement <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
+        If fiscal_year < 1900 Then
+            fundamental_type = fiscal_period
+            fundamental_sequence = fiscal_year
+            fiscal_year = IntrinioBankFundamentals(identifier, statement, fundamental_type, fundamental_sequence, "fiscal_year")
+            fiscal_period = IntrinioBankFundamentals(identifier, statement, fundamental_type, fundamental_sequence, "fiscal_period")
+        End If
+    End If
+    
+    If identifier <> "" And statement <> "" And fiscal_year <> 0 And fiscal_period <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
+        
+
+        Key = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period
+        
+        If BankFinancialsDic.Exists(Key) = False Then
+            Dim IntrinioClient As New WebClient
+            IntrinioClient.BaseUrl = BaseUrl
+            If iCredentials.Exists("username") = False Or iCredentials.Exists("password") = False Or iCredentials("username") = Empty Or iCredentials("password") = Empty Then
+                Call IntrinioInitialize
+            End If
+            
+            Dim inUsername As String
+            Dim inPassword As String
+            inUsername = iCredentials("username")
+            inPassword = iCredentials("password")
+            Dim Auth As New HttpBasicAuthenticator
+            Auth.Setup _
+                Username:=inUsername, _
+                Password:=inPassword
+            Set IntrinioClient.Authenticator = Auth
+            
+            Dim Request As New WebRequest
+            Dim last_page As Integer
+            Dim is_last_page As Boolean
+            Dim page As Integer
+            Dim Response As WebResponse
+            
+            page = 1
+            
+            Do Until is_last_page = True
+                Request.Resource = "financials/banks"
+                Request.Method = HttpGet
+                Request.Format = JSON
+                Request.AddQuerystringParam "identifier", identifier
+                Request.AddQuerystringParam "statement", statement
+                Request.AddQuerystringParam "fiscal_year", fiscal_year
+                Request.AddQuerystringParam "fiscal_period", fiscal_period
+                
+                Set Response = IntrinioClient.Execute(Request)
+
+                If Response.StatusCode = ok Then
+                    If Response.Content <> "" Then
+                        last_page = Response.Data("total_pages")
+                        If last_page > 0 Then
+                            If last_page = page Then
+                                is_last_page = True
+                            Else
+                                is_last_page = False
+                                page = page + 1
+                            End If
+                            
+                            If BankFinancialsDic.Exists(Key) = False Then
+                                BankFinancialsDic.Add Key, Response.Data("data")
+                            ElseIf BankFinancialsDic.Exists(Key) = True Then
+                                BankFinancialsDic.Remove (Key)
+                                BankFinancialsDic.Add Key, Response.Data("data")
+                            End If
+                            
+                            For Each X In BankFinancialsDic(Key)
+                                rTag = X("tag")
+                                sValue = X("value")
+                                nKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & rTag
+                                If BankFinancialsDic.Exists(nKey) = True Then
+                                    BankFinancialsDic.Remove (nKey)
+                                End If
+                                BankFinancialsDic.Add nKey, sValue
+                            Next
+                        Else
+                            is_last_page = True
+                            If BankFinancialsDic.Exists(Key) = False Then
+                                BankFinancialsDic.Add Key, Response.Data("data")
+                            ElseIf BankFinancialsDic.Exists(Key) = True Then
+                                BankFinancialsDic.Remove (Key)
+                                BankFinancialsDic.Add Key, Response.Data("data")
+                            End If
+                        End If
+                    Else
+                        is_last_page = True
+                        If BankFinancialsDic.Exists(Key) = False Then
+                            BankFinancialsDic.Add Key, Empty
+                        ElseIf BankFinancialsDic.Exists(Key) = True Then
+                            BankFinancialsDic.Remove (Key)
+                            BankFinancialsDic.Add Key, Empty
+                        End If
+                    End If
+                Else
+                    is_last_page = True
+                    If Response.StatusCode = 403 Then
+                        APICallsAtLimit = True
+                        IntrinioBankFinancials = "Plan Limit Reached"
+                    Else
+                        IntrinioBankFinancials = ""
+                    End If
+                End If
+            Loop
+                            
+            eKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
+
+            If BankFinancialsDic.Exists(Key) = True Then
+
+                If BankFinancialsDic(Key) Is Not Empty Then
+                    
+                    If IsNumeric(BankFinancialsDic(eKey)) = True Then
+                        Value = BankFinancialsDic(eKey)
+                        If rounding = "K" Then
+                            Rounder = 1000
+                        ElseIf rounding = "M" Then
+                            Rounder = 1000000
+                        ElseIf rounding = "B" Then
+                            Rounder = 1000000000
+                        Else
+                            Rounder = 1
+                        End If
+                    
+                        IntrinioBankFinancials = Value / Rounder
+                    Else
+                        IntrinioBankFinancials = BankFinancialsDic(eKey)
+                    End If
+                Else
+                    IntrinioBankFinancials = ""
+                End If
+            Else
+                IntrinioBankFinancials = ""
+            End If
+        ElseIf BankFinancialsDic.Exists(Key) = True Then
+            eKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
+            
+            If IsNumeric(BankFinancialsDic(eKey)) = True Then
+                Value = BankFinancialsDic(eKey)
+                
+                If rounding = "K" Then
+                    Rounder = 1000
+                ElseIf rounding = "M" Then
+                    Rounder = 1000000
+                ElseIf rounding = "B" Then
+                    Rounder = 1000000000
+                Else
+                    Rounder = 1
+                End If
+                
+                IntrinioBankFinancials = Value / Rounder
+            Else
+                IntrinioBankFinancials = BankFinancialsDic(eKey)
+            End If
+        End If
+    Else
+        If APICallsAtLimit = True Then
+            IntrinioBankFinancials = "Plan Limit Reached"
+        ElseIf LoginFailure = True Then
+            IntrinioBankFinancials = "Invalid API Keys"
+        ElseIf coFailure = True Then
+            IntrinioBankFinancials = "Invalid Identifier"
+        Else
+            IntrinioBankFinancials = ""
+        End If
+    End If
+ExitHere:
+    Exit Function
+ErrorHandler:
+    IntrinioBankFinancials = ""
+    Resume Next
+End Function
+
 Private Function IntrinioAddinVersion(Item As String)
     Dim IntrinioClient As New WebClient
     IntrinioClient.BaseUrl = BaseUrl
@@ -2284,7 +2868,7 @@ Private Function IntrinioAddinVersion(Item As String)
     Dim Request As New WebRequest
     Request.Resource = "excel"
     Request.Method = HttpGet
-    Request.Format = Json
+    Request.Format = JSON
     
     Dim Response As WebResponse
     Set Response = IntrinioClient.Execute(Request)
@@ -2541,6 +3125,9 @@ Public Sub IntrinioRefresh()
         ReportedFundamentalsDic.RemoveAll
         ReportedFinancialsDic.RemoveAll
         ReportedTagsDic.RemoveAll
+        BankFundamentalsDic.RemoveAll
+        BankFinancialsDic.RemoveAll
+        BankTagsDic.RemoveAll
         
         APICallsAtLimit = False
         LoginFailure = False

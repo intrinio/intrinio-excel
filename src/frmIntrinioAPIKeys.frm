@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmIntrinioAPIKeys 
    Caption         =   "Intrinio API Keys"
-   ClientHeight    =   2265
+   ClientHeight    =   2100
    ClientLeft      =   42
    ClientTop       =   -1904
    ClientWidth     =   8736.001
@@ -48,6 +48,13 @@ Private Sub cmdUpdate_Click()
     End With
     Call IntrinioInitialize
     Unload Me
+End Sub
+
+
+Private Sub lblAPIKeys_Click()
+    Dim Url As String
+    Url = "https://home.intrinio.com/getting-started-excel-step-3/"
+    ActiveWorkbook.FollowHyperlink Url
 End Sub
 
 Private Sub UserForm_Initialize()
@@ -114,55 +121,56 @@ Private Sub UserForm_Initialize()
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-
-    If CloseMode = vbFormControlMenu Then
-        Dim File_Num As Long
-        Dim sOutFolder As String, sOutFile As String
-        Dim IntrinioUsername As String
-        Dim IntrinioPassword As String
-        Dim sInFolder As String, sInFile As String, textline As String
-        Dim i As Integer, lLength As Integer, bString As Integer
-        
-        sInFolder = ThisWorkbook.path
-        
-        sInFile = "Intrinio_API_Keys"
-
-        File_Num = FreeFile
-        Open sInFolder & Application.PathSeparator & VBA.Trim(sInFile) & ".txt" For Input As #File_Num
-        i = 1
-        Do Until EOF(1)
-            Line Input #1, textline
-            lLength = Len(textline)
-            bString = InStr(textline, ":")
-            IntrinioUsername = VBA.Left(textline, bString - 1)
-            IntrinioPassword = VBA.Right(textline, lLength - bString)
-        Loop
-        
-        Close #File_Num
-        
-        If IntrinioUsername <> "" Or IntrinioPassword <> "" Then
-            Unload Me
-        Else
-            IntrinioUsername = "<INTRINIO_USER_API_KEY>"
-            IntrinioPassword = "<INTRINIO_COLLABORATOR_KEY>"
+    #If Win32 Or Win64 Then
+        If CloseMode = vbFormControlMenu Then
+            Dim File_Num As Long
+            Dim sOutFolder As String, sOutFile As String
+            Dim IntrinioUsername As String
+            Dim IntrinioPassword As String
+            Dim sInFolder As String, sInFile As String, textline As String
+            Dim i As Integer, lLength As Integer, bString As Integer
             
-            On Error Resume Next
-            sOutFolder = ThisWorkbook.path
-        
-            On Error GoTo 0
+            sInFolder = ThisWorkbook.path
+            
+            sInFile = "Intrinio_API_Keys"
+    
             File_Num = FreeFile
-            With ActiveSheet
-                'Specify the output filename without destroying the original value
-                sOutFile = "Intrinio_API_Keys"
-                'Specify the correct output folder and the output file name
-                Open sOutFolder & Application.PathSeparator & VBA.Trim(sOutFile) & ".txt" For Output As #File_Num
-                Print #1, IntrinioUsername & ":" & IntrinioPassword
-                Close #File_Num
-            End With
-            Call IntrinioInitialize
-            Unload Me
+            Open sInFolder & Application.PathSeparator & VBA.Trim(sInFile) & ".txt" For Input As #File_Num
+            i = 1
+            Do Until EOF(1)
+                Line Input #1, textline
+                lLength = Len(textline)
+                bString = InStr(textline, ":")
+                IntrinioUsername = VBA.Left(textline, bString - 1)
+                IntrinioPassword = VBA.Right(textline, lLength - bString)
+            Loop
+            
+            Close #File_Num
+            
+            If IntrinioUsername <> "" Or IntrinioPassword <> "" Then
+                Unload Me
+            Else
+                IntrinioUsername = "<INTRINIO_USER_API_KEY>"
+                IntrinioPassword = "<INTRINIO_COLLABORATOR_KEY>"
+                
+                On Error Resume Next
+                sOutFolder = ThisWorkbook.path
+            
+                On Error GoTo 0
+                File_Num = FreeFile
+                With ActiveSheet
+                    'Specify the output filename without destroying the original value
+                    sOutFile = "Intrinio_API_Keys"
+                    'Specify the correct output folder and the output file name
+                    Open sOutFolder & Application.PathSeparator & VBA.Trim(sOutFile) & ".txt" For Output As #File_Num
+                    Print #1, IntrinioUsername & ":" & IntrinioPassword
+                    Close #File_Num
+                End With
+                Call IntrinioInitialize
+                Unload Me
+            End If
         End If
-    End If
+    #End If
 End Sub
 
 Private Sub UserForm_Terminate()

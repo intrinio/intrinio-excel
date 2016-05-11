@@ -6,7 +6,7 @@ VBA-Web (formerly Excel-REST) makes working with complex webservices and APIs ea
 Getting started
 ---------------
 
-- Download the [latest release (v4.0.21)](https://github.com/VBA-tools/VBA-Web/releases)
+- Download the [latest release (v4.0.22)](https://github.com/VBA-tools/VBA-Web/releases)
 - To install/upgrade in an existing file, use `VBA-Web - Installer.xlsm`
 - To start from scratch in Excel, `VBA-Web - Blank.xlsm` has everything setup and ready to go
 
@@ -151,9 +151,9 @@ Function QueryTwitter(Query As String) As WebResponse
     Request.Resource = "search/tweets.json"
     Request.Format = WebFormat.Json
     Request.Method = WebMethod.HttpGet
-    Request.AddParameter "q", Query
-    Request.AddParameter "lang", "en"
-    Request.AddParameter "count", 20
+    Request.AddQuerystringParam "q", Query
+    Request.AddQuerystringParam "lang", "en"
+    Request.AddQuerystringParam "count", 20
 
     ' => GET https://api.twitter.com/1.1/search/tweets.json?q=...&lang=en&count=20
     '    Authorization Bearer Token... (received and added automatically via TwitterAuthenticator)
