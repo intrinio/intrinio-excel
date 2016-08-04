@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 ''
-' WebResponse v4.0.22
+' WebResponse v4.1.1
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-Web
 '
 ' Wrapper for http/cURL responses that includes parsed Data based on WebRequest.ResponseFormat.
@@ -285,7 +285,7 @@ Public Function ExtractCookies(Headers As Collection) As Collection
                     web_Value = VBA.Mid$(web_Value, 2, VBA.Len(web_Value) - 2)
                 End If
 
-                web_Cookies.Add WebHelpers.CreateKeyValue(web_Key, WebHelpers.UrlDecode(web_Value, PlusAsSpace:=False))
+                web_Cookies.Add WebHelpers.CreateKeyValue(web_Key, WebHelpers.UrlDecode(web_Value, PlusAsSpace:=False, EncodingMode:=UrlEncodingMode.CookieUrlEncoding))
             Else
                 WebHelpers.LogWarning _
                     "Unrecognized cookie format: " & web_Cookie, "WebResponse.ExtractCookies"

@@ -1,6 +1,6 @@
 Attribute VB_Name = "WebHelpers"
 ''
-' WebHelpers v4.0.22
+' WebHelpers v4.1.1
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-Web
 '
 ' Contains general-purpose helpers that are used throughout VBA-Web. Includes:
@@ -144,14 +144,10 @@ Const AUTOPROXY_DETECT_TYPE_DNS = 2
 ' === VBA-UTC Headers
 #If Mac Then
 
-Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" _
-    (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
-Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" _
-    (ByVal utc_File As Long) As Long
-Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" _
-    (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
-Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" _
-    (ByVal utc_File As Long) As Long
+Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
+Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
+Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
+Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
 
 #ElseIf VBA7 Then
 
@@ -247,7 +243,7 @@ Private Declare Function web_fread Lib "libc.dylib" Alias "fread" (ByVal outStr 
 Private Declare Function web_feof Lib "libc.dylib" Alias "feof" (ByVal File As Long) As Long
 #End If
 
-Public Const WebUserAgent As String = "VBA-Web v4.0.22 (https://github.com/VBA-tools/VBA-Web)"
+Public Const WebUserAgent As String = "VBA-Web v4.1.1 (https://github.com/VBA-tools/VBA-Web)"
 
 ' @internal
 Public Type ShellResult
@@ -343,6 +339,24 @@ Public Enum WebFormat
     FormUrlEncoded = 2
     Xml = 3
     Custom = 9
+End Enum
+
+''
+' @property UrlEncodingMode
+' @param StrictUrlEncoding RFC 3986, ALPHA / DIGIT / "-" / "." / "_" / "~"
+' @param FormUrlEncoding ALPHA / DIGIT / "-" / "." / "_" / "*", (space) -> "+", &...; UTF-8 encoding
+' @param QueryUrlEncoding Subset of strict and form that should be suitable for non-form-urlencoded query strings
+'   ALPHA / DIGIT / "-" / "." / "_"
+' @param CookieUrlEncoding strict / "!" / "#" / "$" / "&" / "'" / "(" / ")" / "*" / "+" /
+'   "/" / ":" / "<" / "=" / ">" / "?" / "@" / "[" / "]" / "^" / "`" / "{" / "|" / "}"
+' @param PathUrlEncoding strict / "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "=" / ":" / "@"
+''
+Public Enum UrlEncodingMode
+    StrictUrlEncoding
+    FormUrlEncoding
+    QueryUrlEncoding
+    CookieUrlEncoding
+    PathUrlEncoding
 End Enum
 
 ''
@@ -611,7 +625,7 @@ End Function
 ' @param {Dictionary|Collection|Variant} Obj Value to convert to Url-Encoded string
 ' @return {String} UrlEncoded string (e.g. a=123&b=456&...)
 ''
-Public Function ConvertToUrlEncoded(Obj As Variant) As String
+Public Function ConvertToUrlEncoded(Obj As Variant, Optional EncodingMode As UrlEncodingMode = UrlEncodingMode.FormUrlEncoding) As String
     Dim web_Encoded As String
 
     If TypeOf Obj Is Collection Then
@@ -619,14 +633,14 @@ Public Function ConvertToUrlEncoded(Obj As Variant) As String
 
         For Each web_KeyValue In Obj
             If VBA.Len(web_Encoded) > 0 Then: web_Encoded = web_Encoded & "&"
-            web_Encoded = web_Encoded & web_GetUrlEncodedKeyValue(web_KeyValue("Key"), web_KeyValue("Value"))
+            web_Encoded = web_Encoded & web_GetUrlEncodedKeyValue(web_KeyValue("Key"), web_KeyValue("Value"), EncodingMode)
         Next web_KeyValue
     Else
         Dim web_Key As Variant
 
         For Each web_Key In Obj.Keys()
             If Len(web_Encoded) > 0 Then: web_Encoded = web_Encoded & "&"
-            web_Encoded = web_Encoded & web_GetUrlEncodedKeyValue(web_Key, Obj(web_Key))
+            web_Encoded = web_Encoded & web_GetUrlEncodedKeyValue(web_Key, Obj(web_Key), EncodingMode)
         Next web_Key
     End If
 
@@ -812,23 +826,40 @@ End Function
 
 ''
 ' Encode string for URLs
-' Reference:
-' - http://www.blooberry.com/indexdot/html/topics/urlencoding.htm
-' - https://www.ietf.org/rfc/rfc1738.txt
 '
-' From RFC 1738:
-' > Thus, only alphanumerics, the special characters "$-_.+!*'(),", and
-' reserved characters used for their reserved purposes may be used
-' unencoded within a URL.
+' See https://github.com/VBA-tools/VBA-Web/wiki/Url-Encoding for details
+'
+' References:
+' - RFC 3986, https://tools.ietf.org/html/rfc3986
+' - form-urlencoded encoding algorithm,
+'   https://www.w3.org/TR/html5/forms.html#application/x-www-form-urlencoded-encoding-algorithm
+' - RFC 6265 (Cookies), https://tools.ietf.org/html/rfc6265
+'   Note: "%" is allowed in spec, but is currently excluded due to parsing issues
 '
 ' @method UrlEncode
 ' @param {Variant} Text Text to encode
 ' @param {Boolean} [SpaceAsPlus = False] `%20` if `False` / `+` if `True`
+'   DEPRECATED Use EncodingMode:=FormUrlEncoding
 ' @param {Boolean} [EncodeUnsafe = True] Encode characters that could be misunderstood within URLs.
 '   (``SPACE, ", <, >, #, %, {, }, |, \, ^, ~, `, [, ]``)
+'   DEPRECATED This was based on an outdated URI spec and has since been removed.
+'     EncodingMode:=CookieUrlEncoding is the closest approximation of this behavior
+' @param {UrlEncodingMode} [EncodingMode = StrictUrlEncoding]
 ' @return {String} Encoded string
 ''
-Public Function UrlEncode(Text As Variant, Optional SpaceAsPlus As Boolean = False, Optional EncodeUnsafe As Boolean = True) As String
+Public Function UrlEncode(Text As Variant, _
+    Optional SpaceAsPlus As Boolean = False, Optional EncodeUnsafe As Boolean = True, _
+    Optional EncodingMode As UrlEncodingMode = UrlEncodingMode.StrictUrlEncoding) As String
+
+    If SpaceAsPlus = True Then
+        LogWarning "SpaceAsPlus is deprecated and will be removed in VBA-Web v5. " & _
+            "Use EncodingMode:=FormUrlEncoding instead", "WebHelpers.UrlEncode"
+    End If
+    If EncodeUnsafe = False Then
+        LogWarning "EncodeUnsafe has been removed as it was based on an outdated url encoding specification. " & _
+            "Use EncodingMode:=CookieUrlEncoding to approximate this behavior", "WebHelpers.UrlEncode"
+    End If
+
     Dim web_UrlVal As String
     Dim web_StringLen As Long
 
@@ -843,8 +874,15 @@ Public Function UrlEncode(Text As Variant, Optional SpaceAsPlus As Boolean = Fal
         Dim web_Space As String
         ReDim web_Result(web_StringLen)
 
+        ' StrictUrlEncoding - ALPHA / DIGIT / "-" / "." / "_" / "~"
+        ' FormUrlEncoding   - ALPHA / DIGIT / "-" / "." / "_" / "*" / (space) -> "+"
+        ' QueryUrlEncoding  - ALPHA / DIGIT / "-" / "." / "_"
+        ' CookieUrlEncoding - strict / "!" / "#" / "$" / "&" / "'" / "(" / ")" / "*" / "+" /
+        '   "/" / ":" / "<" / "=" / ">" / "?" / "@" / "[" / "]" / "^" / "`" / "{" / "|" / "}"
+        ' PathUrlEncoding   - strict / "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "=" / ":" / "@"
+
         ' Set space value
-        If SpaceAsPlus Then
+        If SpaceAsPlus Or EncodingMode = UrlEncodingMode.FormUrlEncoding Then
             web_Space = "+"
         Else
             web_Space = "%20"
@@ -857,36 +895,91 @@ Public Function UrlEncode(Text As Variant, Optional SpaceAsPlus As Boolean = Fal
             web_CharCode = VBA.Asc(web_Char)
 
             Select Case web_CharCode
-                Case 33, 36, 39, 40, 41, 42, 44, 45, 46, 48 To 57, 65 To 90, 95, 97 To 122
-                    ' Unencoded:
-                    ' alphanumeric - 48-57, 65-90, 97-122
-                    ' $-_.!*'(), - 33, 36, 39, 40, 41, 42, 43, 44, 45, 46, 95
+                Case 65 To 90, 97 To 122
+                    ' ALPHA
                     web_Result(web_i) = web_Char
-                Case 34, 35, 37, 60, 62, 91 To 94, 96, 123 To 126
-                    ' Unsafe characters: <>"#%{}|\^~[]`
-                    If EncodeUnsafe Then
-                        web_Result(web_i) = "%" & VBA.Hex(web_CharCode)
-                    Else
-                        web_Result(web_i) = web_Char
-                    End If
+                Case 48 To 57
+                    ' DIGIT
+                    web_Result(web_i) = web_Char
+                Case 45, 46, 95
+                    ' "-" / "." / "_"
+                    web_Result(web_i) = web_Char
+
                 Case 32
-                    If EncodeUnsafe Then
-                        web_Result(web_i) = web_Space
-                    Else
+                    ' (space)
+                    ' FormUrlEncoding -> "+"
+                    ' Else -> "%20"
+                    web_Result(web_i) = web_Space
+
+                Case 33, 36, 38, 39, 40, 41, 43, 58, 61, 64
+                    ' "!" / "$" / "&" / "'" / "(" / ")" / "+" / ":" / "=" / "@"
+                    ' PathUrlEncoding, CookieUrlEncoding -> Unencoded
+                    ' Else -> Percent-encoded
+                    If EncodingMode = UrlEncodingMode.PathUrlEncoding Or EncodingMode = UrlEncodingMode.CookieUrlEncoding Then
                         web_Result(web_i) = web_Char
-                    End If
-                Case 43
-                    ' + is considered safe special character
-                    ' but in space-as-plus cases, it's encoded to differentiate with space
-                    If EncodeUnsafe And SpaceAsPlus Then
+                    Else
                         web_Result(web_i) = "%" & VBA.Hex(web_CharCode)
+                    End If
+
+                Case 35, 45, 46, 47, 60, 62, 63, 91, 93, 94, 95, 96, 123, 124, 125
+                    ' "#" / "-" / "." / "/" / "<" / ">" / "?" / "[" / "]" / "^" / "_" / "`" / "{" / "|" / "}"
+                    ' CookieUrlEncoding -> Unencoded
+                    ' Else -> Percent-encoded
+                    If EncodingMode = UrlEncodingMode.CookieUrlEncoding Then
+                        web_Result(web_i) = web_Char
+                    Else
+                        web_Result(web_i) = "%" & VBA.Hex(web_CharCode)
+                    End If
+
+                Case 42
+                    ' "*"
+                    ' FormUrlEncoding, PathUrlEncoding, CookieUrlEncoding -> "*"
+                    ' Else -> "%2A"
+                    If EncodingMode = UrlEncodingMode.FormUrlEncoding _
+                        Or EncodingMode = UrlEncodingMode.PathUrlEncoding _
+                        Or EncodingMode = UrlEncodingMode.CookieUrlEncoding Then
+
+                        web_Result(web_i) = web_Char
+                    Else
+                        web_Result(web_i) = "%" & VBA.Hex(web_CharCode)
+                    End If
+
+                Case 44, 59
+                    ' "," / ";"
+                    ' PathUrlEncoding -> Unencoded
+                    ' Else -> Percent-encoded
+                    If EncodingMode = UrlEncodingMode.PathUrlEncoding Then
+                        web_Result(web_i) = web_Char
+                    Else
+                        web_Result(web_i) = "%" & VBA.Hex(web_CharCode)
+                    End If
+
+                Case 126
+                    ' "~"
+                    ' FormUrlEncoding, QueryUrlEncoding -> "%7E"
+                    ' Else -> "~"
+                    If EncodingMode = UrlEncodingMode.FormUrlEncoding Or EncodingMode = UrlEncodingMode.QueryUrlEncoding Then
+                        web_Result(web_i) = "%7E"
                     Else
                         web_Result(web_i) = web_Char
                     End If
+
                 Case 0 To 15
                     web_Result(web_i) = "%0" & VBA.Hex(web_CharCode)
                 Case Else
                     web_Result(web_i) = "%" & VBA.Hex(web_CharCode)
+
+                ' TODO For non-ASCII characters,
+                '
+                ' FormUrlEncoded:
+                '
+                ' Replace the character by a string consisting of a U+0026 AMPERSAND character (&), a "#" (U+0023) character,
+                ' one or more ASCII digits representing the Unicode code point of the character in base ten, and finally a ";" (U+003B) character.
+                '
+                ' Else:
+                '
+                ' Encode to sequence of 2 or 3 bytes in UTF-8, then percent encode
+                ' Reference Implementation: https://www.w3.org/International/URLUTF8Encoder.java
             End Select
         Next web_i
         UrlEncode = VBA.Join$(web_Result, "")
@@ -899,10 +992,14 @@ End Function
 ' @method UrlDecode
 ' @param {String} Encoded Text to decode
 ' @param {Boolean} [PlusAsSpace = True] Decode plus as space
-'   DEPRECATED: Default = True to align with existing behavior, will be changed to False in v5
+'   DEPRECATED Use EncodingMode:=FormUrlEncoding Or QueryUrlEncoding
+' @param {UrlEncodingMode} [EncodingMode = StrictUrlEncoding]
 ' @return {String} Decoded string
 ''
-Public Function UrlDecode(Encoded As String, Optional PlusAsSpace As Boolean = True) As String
+Public Function UrlDecode(Encoded As String, _
+    Optional PlusAsSpace As Boolean = True, _
+    Optional EncodingMode As UrlEncodingMode = UrlEncodingMode.StrictUrlEncoding) As String
+
     Dim web_StringLen As Long
     web_StringLen = VBA.Len(Encoded)
 
@@ -914,7 +1011,11 @@ Public Function UrlDecode(Encoded As String, Optional PlusAsSpace As Boolean = T
         For web_i = 1 To web_StringLen
             web_Temp = VBA.Mid$(Encoded, web_i, 1)
 
-            If web_Temp = "+" And PlusAsSpace Then
+            If web_Temp = "+" And _
+                (PlusAsSpace _
+                 Or EncodingMode = UrlEncodingMode.FormUrlEncoding _
+                 Or EncodingMode = UrlEncodingMode.QueryUrlEncoding) Then
+
                 web_Temp = " "
             ElseIf web_Temp = "%" And web_StringLen >= web_i + 2 Then
                 web_Temp = VBA.Mid$(Encoded, web_i + 1, 2)
@@ -922,6 +1023,8 @@ Public Function UrlDecode(Encoded As String, Optional PlusAsSpace As Boolean = T
 
                 web_i = web_i + 2
             End If
+
+            ' TODO Handle non-ASCII characters
 
             web_Result = web_Result & web_Temp
         Next web_i
@@ -1785,7 +1888,7 @@ End Function
 ' ============================================= '
 
 ' Helper for url-encoded to create key=value pair
-Private Function web_GetUrlEncodedKeyValue(Key As Variant, Value As Variant) As String
+Private Function web_GetUrlEncodedKeyValue(Key As Variant, Value As Variant, Optional EncodingMode As UrlEncodingMode = UrlEncodingMode.FormUrlEncoding) As String
     Select Case VBA.VarType(Value)
     Case VBA.vbBoolean
         ' Convert boolean to lowercase
@@ -1803,11 +1906,11 @@ Private Function web_GetUrlEncodedKeyValue(Key As Variant, Value As Variant) As 
     End Select
 
     ' Url encode key and value (using + for spaces)
-    web_GetUrlEncodedKeyValue = UrlEncode(Key, SpaceAsPlus:=True) & "=" & UrlEncode(Value, SpaceAsPlus:=True)
+    web_GetUrlEncodedKeyValue = UrlEncode(Key, EncodingMode:=EncodingMode) & "=" & UrlEncode(Value, EncodingMode:=EncodingMode)
 End Function
 
 ''
-' VBA-JSON v2.0.1
+' VBA-JSON v2.2.2
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
@@ -1865,22 +1968,22 @@ End Function
 ' @return {Object} (Dictionary or Collection)
 ' @throws 10001 - JSON parse error
 ''
-Public Function ParseJson(ByVal json_String As String) As Object
+Public Function ParseJson(ByVal JsonString As String) As Object
     Dim json_Index As Long
     json_Index = 1
 
     ' Remove vbCr, vbLf, and vbTab from json_String
-    json_String = VBA.Replace(VBA.Replace(VBA.Replace(json_String, VBA.vbCr, ""), VBA.vbLf, ""), VBA.vbTab, "")
+    JsonString = VBA.Replace(VBA.Replace(VBA.Replace(JsonString, VBA.vbCr, ""), VBA.vbLf, ""), VBA.vbTab, "")
 
-    json_SkipSpaces json_String, json_Index
-    Select Case VBA.Mid$(json_String, json_Index, 1)
+    json_SkipSpaces JsonString, json_Index
+    Select Case VBA.Mid$(JsonString, json_Index, 1)
     Case "{"
-        Set ParseJson = json_ParseObject(json_String, json_Index)
+        Set ParseJson = json_ParseObject(JsonString, json_Index)
     Case "["
-        Set ParseJson = json_ParseArray(json_String, json_Index)
+        Set ParseJson = json_ParseArray(JsonString, json_Index)
     Case Else
         ' Error: Invalid JSON string
-        Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '{' or '['")
+        Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(JsonString, json_Index, "Expecting '{' or '['")
     End Select
 End Function
 
@@ -1888,10 +1991,11 @@ End Function
 ' Convert object (Dictionary/Collection/Array) to JSON
 '
 ' @method ConvertToJson
-' @param {Variant} json_DictionaryCollectionOrArray (Dictionary, Collection, or Array)
+' @param {Variant} JsonValue (Dictionary, Collection, or Array)
+' @param {Integer|String} Whitespace "Pretty" print json with given number of spaces per indentation (Integer) or given string
 ' @return {String}
 ''
-Public Function ConvertToJson(ByVal json_DictionaryCollectionOrArray As Variant) As String
+Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitespace As Variant, Optional ByVal json_CurrentIndentation As Long = 0) As String
     Dim json_buffer As String
     Dim json_BufferPosition As Long
     Dim json_BufferLength As Long
@@ -1906,6 +2010,11 @@ Public Function ConvertToJson(ByVal json_DictionaryCollectionOrArray As Variant)
     Dim json_Key As Variant
     Dim json_Value As Variant
     Dim json_DateStr As String
+    Dim json_Converted As String
+    Dim json_SkipItem As Boolean
+    Dim json_PrettyPrint As Boolean
+    Dim json_Indentation As String
+    Dim json_InnerIndentation As String
 
     json_LBound = -1
     json_UBound = -1
@@ -1913,49 +2022,65 @@ Public Function ConvertToJson(ByVal json_DictionaryCollectionOrArray As Variant)
     json_LBound2D = -1
     json_UBound2D = -1
     json_IsFirstItem2D = True
+    json_PrettyPrint = Not IsMissing(Whitespace)
 
-    Select Case VBA.VarType(json_DictionaryCollectionOrArray)
-    Case VBA.vbNull, VBA.vbEmpty
+    Select Case VBA.VarType(JsonValue)
+    Case VBA.vbNull
         ConvertToJson = "null"
     Case VBA.vbDate
         ' Date
-        json_DateStr = ConvertToIso(VBA.CDate(json_DictionaryCollectionOrArray))
+        json_DateStr = ConvertToIso(VBA.CDate(JsonValue))
 
         ConvertToJson = """" & json_DateStr & """"
     Case VBA.vbString
         ' String (or large number encoded as string)
-        If Not JsonOptions.UseDoubleForLargeNumbers And json_StringIsLargeNumber(json_DictionaryCollectionOrArray) Then
-            ConvertToJson = json_DictionaryCollectionOrArray
+        If Not JsonOptions.UseDoubleForLargeNumbers And json_StringIsLargeNumber(JsonValue) Then
+            ConvertToJson = JsonValue
         Else
-            ConvertToJson = """" & json_Encode(json_DictionaryCollectionOrArray) & """"
+            ConvertToJson = """" & json_Encode(JsonValue) & """"
         End If
     Case VBA.vbBoolean
-        If json_DictionaryCollectionOrArray Then
+        If JsonValue Then
             ConvertToJson = "true"
         Else
             ConvertToJson = "false"
         End If
     Case VBA.vbArray To VBA.vbArray + VBA.vbByte
+        If json_PrettyPrint Then
+            If VBA.VarType(Whitespace) = VBA.vbString Then
+                json_Indentation = VBA.String$(json_CurrentIndentation + 1, Whitespace)
+                json_InnerIndentation = VBA.String$(json_CurrentIndentation + 2, Whitespace)
+            Else
+                json_Indentation = VBA.Space$((json_CurrentIndentation + 1) * Whitespace)
+                json_InnerIndentation = VBA.Space$((json_CurrentIndentation + 2) * Whitespace)
+            End If
+        End If
+
         ' Array
         json_BufferAppend json_buffer, "[", json_BufferPosition, json_BufferLength
 
         On Error Resume Next
 
-        json_LBound = LBound(json_DictionaryCollectionOrArray, 1)
-        json_UBound = UBound(json_DictionaryCollectionOrArray, 1)
-        json_LBound2D = LBound(json_DictionaryCollectionOrArray, 2)
-        json_UBound2D = UBound(json_DictionaryCollectionOrArray, 2)
+        json_LBound = LBound(JsonValue, 1)
+        json_UBound = UBound(JsonValue, 1)
+        json_LBound2D = LBound(JsonValue, 2)
+        json_UBound2D = UBound(JsonValue, 2)
 
         If json_LBound >= 0 And json_UBound >= 0 Then
             For json_Index = json_LBound To json_UBound
                 If json_IsFirstItem Then
                     json_IsFirstItem = False
                 Else
+                    ' Append comma to previous line
                     json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
                 End If
 
                 If json_LBound2D >= 0 And json_UBound2D >= 0 Then
-                    json_BufferAppend json_buffer, "[", json_BufferPosition, json_BufferLength
+                    ' 2D Array
+                    If json_PrettyPrint Then
+                        json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
+                    End If
+                    json_BufferAppend json_buffer, json_Indentation & "[", json_BufferPosition, json_BufferLength
 
                     For json_Index2D = json_LBound2D To json_UBound2D
                         If json_IsFirstItem2D Then
@@ -1964,67 +2089,166 @@ Public Function ConvertToJson(ByVal json_DictionaryCollectionOrArray As Variant)
                             json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
                         End If
 
-                        json_BufferAppend json_buffer, _
-                            ConvertToJson(json_DictionaryCollectionOrArray(json_Index, json_Index2D)), _
-                            json_BufferPosition, json_BufferLength
+                        json_Converted = ConvertToJson(JsonValue(json_Index, json_Index2D), Whitespace, json_CurrentIndentation + 2)
+
+                        ' For Arrays/Collections, undefined (Empty/Nothing) is treated as null
+                        If json_Converted = "" Then
+                            ' (nest to only check if converted = "")
+                            If json_IsUndefined(JsonValue(json_Index, json_Index2D)) Then
+                                json_Converted = "null"
+                            End If
+                        End If
+
+                        If json_PrettyPrint Then
+                            json_Converted = vbNewLine & json_InnerIndentation & json_Converted
+                        End If
+
+                        json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
                     Next json_Index2D
 
-                    json_BufferAppend json_buffer, "]", json_BufferPosition, json_BufferLength
+                    If json_PrettyPrint Then
+                        json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
+                    End If
+
+                    json_BufferAppend json_buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
                     json_IsFirstItem2D = True
                 Else
-                    json_BufferAppend json_buffer, _
-                        ConvertToJson(json_DictionaryCollectionOrArray(json_Index)), _
-                        json_BufferPosition, json_BufferLength
+                    ' 1D Array
+                    json_Converted = ConvertToJson(JsonValue(json_Index), Whitespace, json_CurrentIndentation + 1)
+
+                    ' For Arrays/Collections, undefined (Empty/Nothing) is treated as null
+                    If json_Converted = "" Then
+                        ' (nest to only check if converted = "")
+                        If json_IsUndefined(JsonValue(json_Index)) Then
+                            json_Converted = "null"
+                        End If
+                    End If
+
+                    If json_PrettyPrint Then
+                        json_Converted = vbNewLine & json_Indentation & json_Converted
+                    End If
+
+                    json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
                 End If
             Next json_Index
         End If
 
         On Error GoTo 0
 
-        json_BufferAppend json_buffer, "]", json_BufferPosition, json_BufferLength
+        If json_PrettyPrint Then
+            json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
+
+            If VBA.VarType(Whitespace) = VBA.vbString Then
+                json_Indentation = VBA.String$(json_CurrentIndentation, Whitespace)
+            Else
+                json_Indentation = VBA.Space$(json_CurrentIndentation * Whitespace)
+            End If
+        End If
+
+        json_BufferAppend json_buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
 
         ConvertToJson = json_BufferToString(json_buffer, json_BufferPosition, json_BufferLength)
 
     ' Dictionary or Collection
     Case VBA.vbObject
+        If json_PrettyPrint Then
+            If VBA.VarType(Whitespace) = VBA.vbString Then
+                json_Indentation = VBA.String$(json_CurrentIndentation + 1, Whitespace)
+            Else
+                json_Indentation = VBA.Space$((json_CurrentIndentation + 1) * Whitespace)
+            End If
+        End If
+
         ' Dictionary
-        If VBA.TypeName(json_DictionaryCollectionOrArray) = "Dictionary" Then
+        If VBA.TypeName(JsonValue) = "Dictionary" Then
             json_BufferAppend json_buffer, "{", json_BufferPosition, json_BufferLength
-            For Each json_Key In json_DictionaryCollectionOrArray.Keys
-                If json_IsFirstItem Then
-                    json_IsFirstItem = False
+            For Each json_Key In JsonValue.Keys
+                ' For Objects, undefined (Empty/Nothing) is not added to object
+                json_Converted = ConvertToJson(JsonValue(json_Key), Whitespace, json_CurrentIndentation + 1)
+                If json_Converted = "" Then
+                    json_SkipItem = json_IsUndefined(JsonValue(json_Key))
                 Else
-                    json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
+                    json_SkipItem = False
                 End If
 
-                json_BufferAppend json_buffer, _
-                    """" & json_Key & """:" & ConvertToJson(json_DictionaryCollectionOrArray(json_Key)), _
-                    json_BufferPosition, json_BufferLength
+                If Not json_SkipItem Then
+                    If json_IsFirstItem Then
+                        json_IsFirstItem = False
+                    Else
+                        json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
+                    End If
+
+                    If json_PrettyPrint Then
+                        json_Converted = vbNewLine & json_Indentation & """" & json_Key & """: " & json_Converted
+                    Else
+                        json_Converted = """" & json_Key & """:" & json_Converted
+                    End If
+
+                    json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
+                End If
             Next json_Key
-            json_BufferAppend json_buffer, "}", json_BufferPosition, json_BufferLength
+
+            If json_PrettyPrint Then
+                json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
+
+                If VBA.VarType(Whitespace) = VBA.vbString Then
+                    json_Indentation = VBA.String$(json_CurrentIndentation, Whitespace)
+                Else
+                    json_Indentation = VBA.Space$(json_CurrentIndentation * Whitespace)
+                End If
+            End If
+
+            json_BufferAppend json_buffer, json_Indentation & "}", json_BufferPosition, json_BufferLength
 
         ' Collection
-        ElseIf VBA.TypeName(json_DictionaryCollectionOrArray) = "Collection" Then
+        ElseIf VBA.TypeName(JsonValue) = "Collection" Then
             json_BufferAppend json_buffer, "[", json_BufferPosition, json_BufferLength
-            For Each json_Value In json_DictionaryCollectionOrArray
+            For Each json_Value In JsonValue
                 If json_IsFirstItem Then
                     json_IsFirstItem = False
                 Else
                     json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
                 End If
 
-                json_BufferAppend json_buffer, _
-                    ConvertToJson(json_Value), _
-                    json_BufferPosition, json_BufferLength
+                json_Converted = ConvertToJson(json_Value, Whitespace, json_CurrentIndentation + 1)
+
+                ' For Arrays/Collections, undefined (Empty/Nothing) is treated as null
+                If json_Converted = "" Then
+                    ' (nest to only check if converted = "")
+                    If json_IsUndefined(json_Value) Then
+                        json_Converted = "null"
+                    End If
+                End If
+
+                If json_PrettyPrint Then
+                    json_Converted = vbNewLine & json_Indentation & json_Converted
+                End If
+
+                json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
             Next json_Value
-            json_BufferAppend json_buffer, "]", json_BufferPosition, json_BufferLength
+
+            If json_PrettyPrint Then
+                json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
+
+                If VBA.VarType(Whitespace) = VBA.vbString Then
+                    json_Indentation = VBA.String$(json_CurrentIndentation, Whitespace)
+                Else
+                    json_Indentation = VBA.Space$(json_CurrentIndentation * Whitespace)
+                End If
+            End If
+
+            json_BufferAppend json_buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
         End If
 
         ConvertToJson = json_BufferToString(json_buffer, json_BufferPosition, json_BufferLength)
+    Case VBA.vbInteger, VBA.vbLong, VBA.vbSingle, VBA.vbDouble, VBA.vbCurrency, VBA.vbDecimal
+        ' Number (use decimals for numbers)
+        ConvertToJson = VBA.Replace(JsonValue, ",", ".")
     Case Else
-        ' Number
+        ' vbEmpty, vbError, vbDataObject, vbByte, vbUserDefinedType
+        ' Use VBA's built-in to-string
         On Error Resume Next
-        ConvertToJson = VBA.Replace(json_DictionaryCollectionOrArray, ",", ".")
+        ConvertToJson = JsonValue
         On Error GoTo 0
     End Select
 End Function
@@ -2179,6 +2403,7 @@ End Function
 Private Function json_ParseNumber(json_String As String, ByRef json_Index As Long) As Variant
     Dim json_Char As String
     Dim json_Value As String
+    Dim json_IsLargeNumber As Boolean
 
     json_SkipSpaces json_String, json_Index
 
@@ -2194,8 +2419,10 @@ Private Function json_ParseNumber(json_String As String, ByRef json_Index As Lon
             ' This can lead to issues when BIGINT's are used (e.g. for Ids or Credit Cards), as they will be invalid above 15 digits
             ' See: http://support.microsoft.com/kb/269370
             '
-            ' Fix: Parse -> String, Convert -> String longer than 15 characters containing only numbers and decimal points -> Number
-            If Not JsonOptions.UseDoubleForLargeNumbers And Len(json_Value) >= 16 Then
+            ' Fix: Parse -> String, Convert -> String longer than 15/16 characters containing only numbers and decimal points -> Number
+            ' (decimal doesn't factor into significant digit count, so if present check for 15 digits + decimal = 16)
+            json_IsLargeNumber = IIf(InStr(json_Value, "."), Len(json_Value) >= 17, Len(json_Value) >= 16)
+            If Not JsonOptions.UseDoubleForLargeNumbers And json_IsLargeNumber Then
                 json_ParseNumber = json_Value
             Else
                 ' VBA.Val does not use regional settings, so guard for comma is not needed
@@ -2232,6 +2459,19 @@ Private Function json_ParseKey(json_String As String, ByRef json_Index As Long) 
     Else
         json_Index = json_Index + 1
     End If
+End Function
+
+Private Function json_IsUndefined(ByVal json_Value As Variant) As Boolean
+    ' Empty / Nothing -> undefined
+    Select Case VBA.VarType(json_Value)
+    Case VBA.vbEmpty
+        json_IsUndefined = True
+    Case VBA.vbObject
+        Select Case VBA.TypeName(json_Value)
+        Case "Empty", "Nothing"
+            json_IsUndefined = True
+        End Select
+    End Select
 End Function
 
 Private Function json_Encode(ByVal json_Text As Variant) As String
@@ -2454,7 +2694,7 @@ Private Function json_UnsignedAdd(json_Start As Long, json_Increment As Long) As
 End Function
 
 ''
-' VBA-UTC v1.0.1
+' VBA-UTC v1.0.2
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
@@ -2579,7 +2819,8 @@ Public Function ParseIso(utc_IsoString As String) As Date
                 Case 1
                     utc_Offset = TimeSerial(VBA.CInt(utc_OffsetParts(0)), VBA.CInt(utc_OffsetParts(1)), 0)
                 Case 2
-                    utc_Offset = TimeSerial(VBA.CInt(utc_OffsetParts(0)), VBA.CInt(utc_OffsetParts(1)), VBA.CInt(utc_OffsetParts(2)))
+                    ' VBA.Val does not use regional settings, use for seconds to avoid decimal/comma issues
+                    utc_Offset = TimeSerial(VBA.CInt(utc_OffsetParts(0)), VBA.CInt(utc_OffsetParts(1)), Int(VBA.Val(utc_OffsetParts(2))))
                 End Select
 
                 If utc_NegativeOffset Then: utc_Offset = -utc_Offset
@@ -2594,13 +2835,14 @@ Public Function ParseIso(utc_IsoString As String) As Date
         Case 1
             ParseIso = ParseIso + VBA.TimeSerial(VBA.CInt(utc_TimeParts(0)), VBA.CInt(utc_TimeParts(1)), 0)
         Case 2
-            ParseIso = ParseIso + VBA.TimeSerial(VBA.CInt(utc_TimeParts(0)), VBA.CInt(utc_TimeParts(1)), VBA.CInt(utc_TimeParts(2)))
+            ' VBA.Val does not use regional settings, use for seconds to avoid decimal/comma issues
+            ParseIso = ParseIso + VBA.TimeSerial(VBA.CInt(utc_TimeParts(0)), VBA.CInt(utc_TimeParts(1)), Int(VBA.Val(utc_TimeParts(2))))
         End Select
+
+        ParseIso = ParseUtc(ParseIso)
 
         If utc_HasOffset Then
             ParseIso = ParseIso + utc_Offset
-        Else
-            ParseIso = ParseUtc(ParseIso)
         End If
     End If
 

@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 ''
-' WebRequest v4.0.22
+' WebRequest v4.1.1
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-Web
 '
 ' `WebRequest` is used to create detailed requests
@@ -514,6 +514,7 @@ End Property
 ''
 Public Property Get FormattedResource() As String
     Dim web_Segment As Variant
+    Dim web_Encoding As UrlEncodingMode
 
     FormattedResource = Me.Resource
 
@@ -530,7 +531,17 @@ Public Property Get FormattedResource() As String
             FormattedResource = FormattedResource & "&"
         End If
 
-        FormattedResource = FormattedResource & WebHelpers.ConvertToUrlEncoded(Me.QuerystringParams)
+        ' For querystrings, W3C defines form-urlencoded as the required encoding,
+        ' but the treatment of space -> "+" (rather than "%20") can cause issues
+        '
+        ' If the request format is explicitly form-urlencoded, use FormUrlEncoding (space -> "+")
+        ' otherwise, use subset of RFC 3986 and form-urlencoded that should work for both cases (space -> "%20")
+        If Me.RequestFormat = WebFormat.FormUrlEncoded Then
+            web_Encoding = UrlEncodingMode.FormUrlEncoding
+        Else
+            web_Encoding = UrlEncodingMode.QueryUrlEncoding
+        End If
+        FormattedResource = FormattedResource & WebHelpers.ConvertToUrlEncoded(Me.QuerystringParams, EncodingMode:=web_Encoding)
     End If
 End Property
 
@@ -666,7 +677,10 @@ End Sub
 ' @param {Variant} Value
 ''
 Public Sub AddCookie(Key As String, Value As Variant)
-    Me.Cookies.Add WebHelpers.CreateKeyValue(Key, Value)
+    Me.Cookies.Add WebHelpers.CreateKeyValue( _
+        web_EncodeCookieName(Key), _
+        WebHelpers.UrlEncode(Value, EncodingMode:=UrlEncodingMode.CookieUrlEncoding) _
+    )
 End Sub
 
 ''
@@ -795,6 +809,55 @@ End Sub
 ' ============================================= '
 ' Private Functions
 ' ============================================= '
+
+' Encode cookie name
+'
+' References:
+' - RFC 6265 https://tools.ietf.org/html/rfc6265
+Private Function web_EncodeCookieName(web_CookieName As Variant) As String
+    Dim web_CookieVal As String
+    Dim web_StringLen As Long
+
+    web_CookieVal = VBA.CStr(web_CookieName)
+    web_StringLen = VBA.Len(web_CookieVal)
+
+    If web_StringLen > 0 Then
+        Dim web_Result() As String
+        Dim web_i As Long
+        Dim web_CharCode As Integer
+        Dim web_Char As String
+        ReDim web_Result(web_StringLen)
+
+        ' ALPHA / DIGIT / "!" / "#" / "$" / "&" / "'" / "*" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+        ' Note: "%" is allowed in spec, but is currently excluded due to parsing issues
+
+        ' Loop through string characters
+        For web_i = 1 To web_StringLen
+            ' Get character and ascii code
+            web_Char = VBA.Mid$(web_CookieVal, web_i, 1)
+            web_CharCode = VBA.Asc(web_Char)
+
+            Select Case web_CharCode
+                Case 65 To 90, 97 To 122
+                    ' ALPHA
+                    web_Result(web_i) = web_Char
+                Case 48 To 57
+                    ' DIGIT
+                    web_Result(web_i) = web_Char
+                Case 33, 35, 36, 38, 39, 42, 43, 45, 46, 94, 95, 96, 124, 126
+                    ' "!" / "#" / "$" / "&" / "'" / "*" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+                    web_Result(web_i) = web_Char
+
+                Case 0 To 15
+                    web_Result(web_i) = "%0" & VBA.Hex(web_CharCode)
+                Case Else
+                    web_Result(web_i) = "%" & VBA.Hex(web_CharCode)
+            End Select
+        Next web_i
+
+        web_EncodeCookieName = VBA.Join$(web_Result, "")
+    End If
+End Function
 
 Private Sub Class_Initialize()
     ' Set default values

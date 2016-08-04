@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 ''
-' OAuth1 Authenticator v3.0.0
+' OAuth1 Authenticator v3.0.6
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-Web
 '
 ' OAuth1 authenticator
@@ -188,7 +188,7 @@ Public Function CreateBaseString(auth_Nonce As String, auth_Timestamp As String,
     auth_Base = VBA.Join(auth_Parameters, "&")
     
     CreateBaseString = WebHelpers.MethodToName(auth_Request.Method) & "&" & _
-        WebHelpers.UrlEncode(GetRequestUrl(auth_Client, auth_Request), EncodeUnsafe:=False) & "&" & _
+        WebHelpers.UrlEncode(GetRequestUrl(auth_Client, auth_Request)) & "&" & _
         WebHelpers.UrlEncode(auth_Base)
 End Function
 

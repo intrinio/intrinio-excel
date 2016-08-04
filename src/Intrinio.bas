@@ -28,8 +28,8 @@ Private UpdatePrompt As Boolean
 
 Private APICallsAtLimit As Boolean
 
-Public Const BaseUrl = "https://www.intrinio.com/api"
-Public Const Intrinio_Addin_Version = "2.4.1"
+Public Const BaseUrl = "https://api.intrinio.com"
+Public Const Intrinio_Addin_Version = "2.5.0"
 
 Public Sub IntrinioInitialize()
 
@@ -201,13 +201,13 @@ Private Function IntrinioCompanies(ticker As String, Item As String)
             Dim Request As New WebRequest
             Request.Resource = "companies/verify"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
 
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 If Response.Data Is Nothing Then
                     IntrinioCompanies = ""
                 Else
@@ -282,13 +282,13 @@ Private Function IntrinioSecurities(ticker As String, Item As String)
             Dim Request As New WebRequest
             Request.Resource = "securities/verify"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
 
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 If Response.Data Is Nothing Then
                     IntrinioSecurities = ""
                 Else
@@ -361,13 +361,13 @@ Private Function IntrinioBanks(identifier As String, Item As String)
             Dim Request As New WebRequest
             Request.Resource = "banks/verify"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "identifier", identifier
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
-
-            If Response.StatusCode = ok Then
+            Debug.Print Response.Content
+            If Response.StatusCode = Ok Then
                 If Response.Data Is Nothing Then
                     IntrinioBanks = ""
                 Else
@@ -565,14 +565,14 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "data_point"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "identifier", identifier
             Request.AddQuerystringParam "item", tags
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
 
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 If requestItemCount = 0 Then
                     DataPointDic.Add Key, Response.Data("value")
                 ElseIf requestItemCount > 0 Then
@@ -888,7 +888,7 @@ Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "prices"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             If start_date <> "" Then
                 Request.AddQuerystringParam "start_date", start_date
@@ -903,7 +903,7 @@ Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 HistoricalPricesDic.Add Key, Response.Data("data")
                 IntrinioHistoricalPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
                 If IntrinioHistoricalPrices = Empty Then
@@ -1048,7 +1048,7 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "historical_data"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "item", Item
             If start_date <> "" Then
@@ -1067,7 +1067,7 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 HistoricalDataDic.Add Key, Response.Data("data")
                 If show_date = True Then
                     IntrinioHistoricalData = HistoricalDataDic(Key)(sequence + 1)("date")
@@ -1214,13 +1214,13 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "news"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 NewsDic.Add Key, Response.Data("data")
                 IntrinioNews = NewsDic(Key)(sequence + 1)(Item)
                 If IntrinioNews = Empty Then
@@ -1374,14 +1374,14 @@ Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "fundamentals/standardized"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 FundamentalsDic.Add Key, Response.Data("data")
                 IntrinioStandardizedFundamentals = FundamentalsDic(Key)(sequence + 1)(Item)
             ElseIf Response.StatusCode = 403 Then
@@ -1527,13 +1527,13 @@ Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "tags/standardized"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 StandardizedTagsDic.Add Key, Response.Data("data")
                 IntrinioStandardizedTags = StandardizedTagsDic(Key)(sequence + 1)(Item)
             ElseIf Response.StatusCode = 403 Then
@@ -1719,7 +1719,7 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Do Until is_last_page = True
                 Request.Resource = "financials/standardized"
                 Request.Method = HttpGet
-                Request.Format = JSON
+                Request.Format = Json
                 Request.AddQuerystringParam "ticker", ticker
                 Request.AddQuerystringParam "statement", statement
                 Request.AddQuerystringParam "fiscal_year", fiscal_year
@@ -1729,7 +1729,7 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 
                 Set Response = IntrinioClient.Execute(Request)
 
-                If Response.StatusCode = ok Then
+                If Response.StatusCode = Ok Then
                     If Response.Content <> "" Then
                         last_page = Response.Data("total_pages")
                         If last_page > 0 Then
@@ -1949,14 +1949,14 @@ Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "fundamentals/reported"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 ReportedFundamentalsDic.Add Key, Response.Data("data")
                 IntrinioReportedFundamentals = ReportedFundamentalsDic(Key)(sequence + 1)(Item)
             ElseIf Response.StatusCode = 403 Then
@@ -2089,7 +2089,7 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "tags/reported"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "fiscal_year", fiscal_year
@@ -2098,7 +2098,7 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
 
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 last_page = Response.Data("total_pages")
                 If last_page > 0 Then
                     ReportedTagsDic.Add Key, Response.Data("data")
@@ -2268,7 +2268,7 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "financials/reported"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "fiscal_year", fiscal_year
@@ -2277,7 +2277,7 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 last_page = Response.Data("total_pages")
                 If last_page > 0 Then
                     ReportedFinancialsDic.Add Key, Response.Data("data")
@@ -2434,7 +2434,7 @@ Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "fundamentals/banks"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "identifier", identifier
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
@@ -2442,7 +2442,7 @@ Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 BankFundamentalsDic.Add Key, Response.Data("data")
                 IntrinioBankFundamentals = BankFundamentalsDic(Key)(sequence + 1)(Item)
             ElseIf Response.StatusCode = 403 Then
@@ -2554,14 +2554,14 @@ Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim Request As New WebRequest
             Request.Resource = "tags/banks"
             Request.Method = HttpGet
-            Request.Format = JSON
+            Request.Format = Json
             Request.AddQuerystringParam "identifier", identifier
             Request.AddQuerystringParam "statement", statement
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
 
-            If Response.StatusCode = ok Then
+            If Response.StatusCode = Ok Then
                 BankTagsDic.Add Key, Response.Data("data")
                 IntrinioBankTags = BankTagsDic(Key)(sequence + 1)(Item)
             ElseIf Response.StatusCode = 403 Then
@@ -2716,7 +2716,7 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Do Until is_last_page = True
                 Request.Resource = "financials/banks"
                 Request.Method = HttpGet
-                Request.Format = JSON
+                Request.Format = Json
                 Request.AddQuerystringParam "identifier", identifier
                 Request.AddQuerystringParam "statement", statement
                 Request.AddQuerystringParam "fiscal_year", fiscal_year
@@ -2724,7 +2724,7 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 
                 Set Response = IntrinioClient.Execute(Request)
 
-                If Response.StatusCode = ok Then
+                If Response.StatusCode = Ok Then
                     If Response.Content <> "" Then
                         last_page = Response.Data("total_pages")
                         If last_page > 0 Then
@@ -2868,12 +2868,12 @@ Private Function IntrinioAddinVersion(Item As String)
     Dim Request As New WebRequest
     Request.Resource = "excel"
     Request.Method = HttpGet
-    Request.Format = JSON
+    Request.Format = Json
     
     Dim Response As WebResponse
     Set Response = IntrinioClient.Execute(Request)
 
-    If Response.StatusCode = ok Then
+    If Response.StatusCode = Ok Then
         APICallsAtLimit = False
         
         If iVersion.Exists("Version") = True Then
@@ -3115,6 +3115,7 @@ Public Sub IntrinioRefresh()
         
         CompanyDic.RemoveAll
         SecuritiesDic.RemoveAll
+        BankDic.RemoveAll
         DataPointDic.RemoveAll
         HistoricalPricesDic.RemoveAll
         HistoricalDataDic.RemoveAll

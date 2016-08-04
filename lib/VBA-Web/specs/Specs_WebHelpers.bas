@@ -107,7 +107,7 @@ Public Function Specs() As SpecSuite
         Obj.Add "g", Null
         
         JsonString = WebHelpers.ConvertToJson(Obj)
-        .Expect(JsonString).ToEqual "{""a"":1,""b"":3.14,""c"":""Howdy!"",""d"":true,""e"":[1,2],""f"":null,""g"":null}"
+        .Expect(JsonString).ToEqual "{""a"":1,""b"":3.14,""c"":""Howdy!"",""d"":true,""e"":[1,2],""g"":null}"
         
         Set Obj = New Dictionary
         Obj.Add "a", "Howdy!"
@@ -147,7 +147,7 @@ Public Function Specs() As SpecSuite
         Obj.Add "c & d", "A + B"
         
         Encoded = WebHelpers.ConvertToUrlEncoded(Obj)
-        .Expect(Encoded).ToEqual "a=1&b=Howdy!&c+%26+d=A+%2B+B"
+        .Expect(Encoded).ToEqual "a=1&b=Howdy%21&c+%26+d=A+%2B+B"
     End With
     
     With Specs.It("should use region invariant numbers and dates")
@@ -193,20 +193,219 @@ Public Function Specs() As SpecSuite
     
     ' UrlEncode
     ' --------------------------------------------- '
-    With Specs.It("should url-encode string (with space as plus and encode unsafe options)")
-        .Expect(WebHelpers.UrlEncode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890$-_.+!*'(),")).ToEqual "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890$-_.+!*'(),"
-        .Expect(WebHelpers.UrlEncode("&/:;=?@")).ToEqual "%26%2F%3A%3B%3D%3F%40"
-        .Expect(WebHelpers.UrlEncode(" ""<>#%{}|\^~[]`")).ToEqual "%20%22%3C%3E%23%25%7B%7D%7C%5C%5E%7E%5B%5D%60"
-        .Expect(WebHelpers.UrlEncode("A + B")).ToEqual "A%20+%20B"
+    With Specs.It("should url-encode (Default = StrictUrlEncoding)")
+        .Expect(WebHelpers.UrlEncode("ABCDEFGHIJKLMNOPQRSTUVWXYZ")).ToEqual "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .Expect(WebHelpers.UrlEncode("abcdefghijklmnopqrstuvwxyz")).ToEqual "abcdefghijklmnopqrstuvwxyz"
+        .Expect(WebHelpers.UrlEncode("1234567890")).ToEqual "1234567890"
+        
+        .Expect(WebHelpers.UrlEncode("-")).ToEqual "-"
+        .Expect(WebHelpers.UrlEncode(".")).ToEqual "."
+        .Expect(WebHelpers.UrlEncode("_")).ToEqual "_"
+        .Expect(WebHelpers.UrlEncode("~")).ToEqual "~"
+        
+        .Expect(WebHelpers.UrlEncode("%")).ToEqual "%25"
+        .Expect(WebHelpers.UrlEncode(" ")).ToEqual "%20"
+
+        .Expect(WebHelpers.UrlEncode("!")).ToEqual "%21"
+        .Expect(WebHelpers.UrlEncode("#")).ToEqual "%23"
+        .Expect(WebHelpers.UrlEncode("$")).ToEqual "%24"
+        .Expect(WebHelpers.UrlEncode("&")).ToEqual "%26"
+        .Expect(WebHelpers.UrlEncode("'")).ToEqual "%27"
+        .Expect(WebHelpers.UrlEncode("(")).ToEqual "%28"
+        .Expect(WebHelpers.UrlEncode(")")).ToEqual "%29"
+        .Expect(WebHelpers.UrlEncode("*")).ToEqual "%2A"
+        .Expect(WebHelpers.UrlEncode("+")).ToEqual "%2B"
+        .Expect(WebHelpers.UrlEncode(",")).ToEqual "%2C"
+        .Expect(WebHelpers.UrlEncode("/")).ToEqual "%2F"
+        .Expect(WebHelpers.UrlEncode(":")).ToEqual "%3A"
+        .Expect(WebHelpers.UrlEncode(";")).ToEqual "%3B"
+        .Expect(WebHelpers.UrlEncode("=")).ToEqual "%3D"
+        .Expect(WebHelpers.UrlEncode("?")).ToEqual "%3F"
+        .Expect(WebHelpers.UrlEncode("@")).ToEqual "%40"
+        .Expect(WebHelpers.UrlEncode("[")).ToEqual "%5B"
+        .Expect(WebHelpers.UrlEncode("]")).ToEqual "%5D"
+        .Expect(WebHelpers.UrlEncode("^")).ToEqual "%5E"
+        .Expect(WebHelpers.UrlEncode("`")).ToEqual "%60"
+        .Expect(WebHelpers.UrlEncode("|")).ToEqual "%7C"
+    End With
+    
+    With Specs.It("should url-encode (FormUrlEncoding)")
+        .Expect(WebHelpers.UrlEncode("ABCDEFGHIJKLMNOPQRSTUVWXYZ", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .Expect(WebHelpers.UrlEncode("abcdefghijklmnopqrstuvwxyz", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "abcdefghijklmnopqrstuvwxyz"
+        .Expect(WebHelpers.UrlEncode("1234567890", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "1234567890"
+        
+        .Expect(WebHelpers.UrlEncode("-", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "-"
+        .Expect(WebHelpers.UrlEncode(".", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "."
+        .Expect(WebHelpers.UrlEncode("_", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "_"
+        .Expect(WebHelpers.UrlEncode("~", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%7E"
+        
+        .Expect(WebHelpers.UrlEncode("%", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%25"
+        .Expect(WebHelpers.UrlEncode(" ", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "+"
+
+        .Expect(WebHelpers.UrlEncode("!", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%21"
+        .Expect(WebHelpers.UrlEncode("#", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%23"
+        .Expect(WebHelpers.UrlEncode("$", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%24"
+        .Expect(WebHelpers.UrlEncode("&", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%26"
+        .Expect(WebHelpers.UrlEncode("'", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%27"
+        .Expect(WebHelpers.UrlEncode("(", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%28"
+        .Expect(WebHelpers.UrlEncode(")", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%29"
+        .Expect(WebHelpers.UrlEncode("*", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "*"
+        .Expect(WebHelpers.UrlEncode("+", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%2B"
+        .Expect(WebHelpers.UrlEncode(",", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%2C"
+        .Expect(WebHelpers.UrlEncode("/", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%2F"
+        .Expect(WebHelpers.UrlEncode(":", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%3A"
+        .Expect(WebHelpers.UrlEncode(";", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%3B"
+        .Expect(WebHelpers.UrlEncode("=", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%3D"
+        .Expect(WebHelpers.UrlEncode("?", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%3F"
+        .Expect(WebHelpers.UrlEncode("@", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%40"
+        .Expect(WebHelpers.UrlEncode("[", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%5B"
+        .Expect(WebHelpers.UrlEncode("]", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%5D"
+        .Expect(WebHelpers.UrlEncode("^", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%5E"
+        .Expect(WebHelpers.UrlEncode("`", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%60"
+        .Expect(WebHelpers.UrlEncode("|", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "%7C"
+    End With
+
+    With Specs.It("should url-encode (QueryUrlEncoding)")
+        .Expect(WebHelpers.UrlEncode("ABCDEFGHIJKLMNOPQRSTUVWXYZ", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .Expect(WebHelpers.UrlEncode("abcdefghijklmnopqrstuvwxyz", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "abcdefghijklmnopqrstuvwxyz"
+        .Expect(WebHelpers.UrlEncode("1234567890", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "1234567890"
+        
+        .Expect(WebHelpers.UrlEncode("-", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "-"
+        .Expect(WebHelpers.UrlEncode(".", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "."
+        .Expect(WebHelpers.UrlEncode("_", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "_"
+        .Expect(WebHelpers.UrlEncode("~", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%7E"
+        
+        .Expect(WebHelpers.UrlEncode("%", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%25"
+        .Expect(WebHelpers.UrlEncode(" ", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%20"
+
+        .Expect(WebHelpers.UrlEncode("!", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%21"
+        .Expect(WebHelpers.UrlEncode("#", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%23"
+        .Expect(WebHelpers.UrlEncode("$", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%24"
+        .Expect(WebHelpers.UrlEncode("&", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%26"
+        .Expect(WebHelpers.UrlEncode("'", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%27"
+        .Expect(WebHelpers.UrlEncode("(", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%28"
+        .Expect(WebHelpers.UrlEncode(")", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%29"
+        .Expect(WebHelpers.UrlEncode("*", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%2A"
+        .Expect(WebHelpers.UrlEncode("+", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%2B"
+        .Expect(WebHelpers.UrlEncode(",", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%2C"
+        .Expect(WebHelpers.UrlEncode("/", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%2F"
+        .Expect(WebHelpers.UrlEncode(":", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%3A"
+        .Expect(WebHelpers.UrlEncode(";", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%3B"
+        .Expect(WebHelpers.UrlEncode("=", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%3D"
+        .Expect(WebHelpers.UrlEncode("?", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%3F"
+        .Expect(WebHelpers.UrlEncode("@", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%40"
+        .Expect(WebHelpers.UrlEncode("[", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%5B"
+        .Expect(WebHelpers.UrlEncode("]", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%5D"
+        .Expect(WebHelpers.UrlEncode("^", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%5E"
+        .Expect(WebHelpers.UrlEncode("`", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%60"
+        .Expect(WebHelpers.UrlEncode("|", EncodingMode:=UrlEncodingMode.QueryUrlEncoding)).ToEqual "%7C"
+    End With
+
+    With Specs.It("should url-encode (CookieUrlEncoding)")
+        .Expect(WebHelpers.UrlEncode("ABCDEFGHIJKLMNOPQRSTUVWXYZ", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .Expect(WebHelpers.UrlEncode("abcdefghijklmnopqrstuvwxyz", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "abcdefghijklmnopqrstuvwxyz"
+        .Expect(WebHelpers.UrlEncode("1234567890", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "1234567890"
+        
+        .Expect(WebHelpers.UrlEncode("-", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "-"
+        .Expect(WebHelpers.UrlEncode(".", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "."
+        .Expect(WebHelpers.UrlEncode("_", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "_"
+        .Expect(WebHelpers.UrlEncode("~", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "~"
+        
+        ' Note: "%" is allowed in spec, but is currently excluded due to parsing issues
+        .Expect(WebHelpers.UrlEncode("%", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "%25"
+        
+        .Expect(WebHelpers.UrlEncode("""", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "%22"
+        .Expect(WebHelpers.UrlEncode(" ", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "%20"
+        
+        .Expect(WebHelpers.UrlEncode("!", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "!"
+        .Expect(WebHelpers.UrlEncode("#", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "#"
+        .Expect(WebHelpers.UrlEncode("$", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "$"
+        .Expect(WebHelpers.UrlEncode("&", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "&"
+        .Expect(WebHelpers.UrlEncode("'", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "'"
+        .Expect(WebHelpers.UrlEncode("(", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "("
+        .Expect(WebHelpers.UrlEncode(")", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual ")"
+        .Expect(WebHelpers.UrlEncode("*", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "*"
+        .Expect(WebHelpers.UrlEncode("+", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "+"
+        .Expect(WebHelpers.UrlEncode(",", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "%2C"
+        .Expect(WebHelpers.UrlEncode("/", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "/"
+        .Expect(WebHelpers.UrlEncode(":", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual ":"
+        .Expect(WebHelpers.UrlEncode(";", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "%3B"
+        .Expect(WebHelpers.UrlEncode("<", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "<"
+        .Expect(WebHelpers.UrlEncode("=", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "="
+        .Expect(WebHelpers.UrlEncode(">", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual ">"
+        .Expect(WebHelpers.UrlEncode("?", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "?"
+        .Expect(WebHelpers.UrlEncode("@", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "@"
+        .Expect(WebHelpers.UrlEncode("[", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "["
+        .Expect(WebHelpers.UrlEncode("]", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "]"
+        .Expect(WebHelpers.UrlEncode("^", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "^"
+        .Expect(WebHelpers.UrlEncode("`", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "`"
+        .Expect(WebHelpers.UrlEncode("{", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "{"
+        .Expect(WebHelpers.UrlEncode("|", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "|"
+        .Expect(WebHelpers.UrlEncode("}", EncodingMode:=UrlEncodingMode.CookieUrlEncoding)).ToEqual "}"
+    End With
+
+    With Specs.It("should url-encode (PathUrlEncoding)")
+        .Expect(WebHelpers.UrlEncode("ABCDEFGHIJKLMNOPQRSTUVWXYZ", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .Expect(WebHelpers.UrlEncode("abcdefghijklmnopqrstuvwxyz", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "abcdefghijklmnopqrstuvwxyz"
+        .Expect(WebHelpers.UrlEncode("1234567890", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "1234567890"
+        
+        .Expect(WebHelpers.UrlEncode("-", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "-"
+        .Expect(WebHelpers.UrlEncode(".", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "."
+        .Expect(WebHelpers.UrlEncode("_", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "_"
+        .Expect(WebHelpers.UrlEncode("~", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "~"
+        
+        .Expect(WebHelpers.UrlEncode("%", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%25"
+        .Expect(WebHelpers.UrlEncode(" ", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%20"
+
+        .Expect(WebHelpers.UrlEncode("!", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "!"
+        .Expect(WebHelpers.UrlEncode("#", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%23"
+        .Expect(WebHelpers.UrlEncode("$", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "$"
+        .Expect(WebHelpers.UrlEncode("&", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "&"
+        .Expect(WebHelpers.UrlEncode("'", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "'"
+        .Expect(WebHelpers.UrlEncode("(", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "("
+        .Expect(WebHelpers.UrlEncode(")", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual ")"
+        .Expect(WebHelpers.UrlEncode("*", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "*"
+        .Expect(WebHelpers.UrlEncode("+", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "+"
+        .Expect(WebHelpers.UrlEncode(",", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual ","
+        .Expect(WebHelpers.UrlEncode("/", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%2F"
+        .Expect(WebHelpers.UrlEncode(":", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual ":"
+        .Expect(WebHelpers.UrlEncode(";", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual ";"
+        .Expect(WebHelpers.UrlEncode("=", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "="
+        .Expect(WebHelpers.UrlEncode("?", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%3F"
+        .Expect(WebHelpers.UrlEncode("@", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "@"
+        .Expect(WebHelpers.UrlEncode("[", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%5B"
+        .Expect(WebHelpers.UrlEncode("]", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%5D"
+        .Expect(WebHelpers.UrlEncode("^", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%5E"
+        .Expect(WebHelpers.UrlEncode("`", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%60"
+        .Expect(WebHelpers.UrlEncode("|", EncodingMode:=UrlEncodingMode.PathUrlEncoding)).ToEqual "%7C"
+    End With
+    
+    With Specs.It("DEPRECATED should url-encode with SpaceAsPlus")
         .Expect(WebHelpers.UrlEncode("A + B", SpaceAsPlus:=True)).ToEqual "A+%2B+B"
     End With
     
     ' UrlDecode
     ' --------------------------------------------- '
-    With Specs.It("should url-decode string")
-        .Expect(WebHelpers.UrlDecode("+%20%21%22%23%24%25%26%27")).ToEqual "  !""#$%&'"
-        .Expect(WebHelpers.UrlDecode("A%20%2B%20B")).ToEqual "A + B"
-        .Expect(WebHelpers.UrlDecode("A+%2B+B")).ToEqual "A + B"
+    With Specs.It("should url-decode string (Default = StrictUrlEncoding)")
+        .Expect(WebHelpers.UrlDecode("ABCDEFGHIJKLMNOPQRSTUVWXYZ")).ToEqual "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .Expect(WebHelpers.UrlDecode("abcdefghijklmnopqrstuvwxyz")).ToEqual "abcdefghijklmnopqrstuvwxyz"
+        .Expect(WebHelpers.UrlDecode("1234567890")).ToEqual "1234567890"
+        
+        .Expect(WebHelpers.UrlDecode("%0A")).ToEqual vbLf
+        .Expect(WebHelpers.UrlDecode("%25")).ToEqual "%"
+        .Expect(WebHelpers.UrlDecode("%7E")).ToEqual "~"
+    End With
+    
+    With Specs.It("should url-decode string (FormUrlEncoding)")
+        .Expect(WebHelpers.UrlDecode("1%20+%202", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "1   2"
+    End With
+    
+    With Specs.It("should url-decode string (QueryUrlEncoding)")
+        .Expect(WebHelpers.UrlDecode("1%20+%202", EncodingMode:=UrlEncodingMode.FormUrlEncoding)).ToEqual "1   2"
+    End With
+    
+    With Specs.It("DEPRECATED should url-decode with PlusAsSpace as default")
+        .Expect(WebHelpers.UrlDecode("1%20+%202")).ToEqual "1   2"
     End With
     
     ' Base64Encode
