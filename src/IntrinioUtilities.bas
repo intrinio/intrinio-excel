@@ -2,18 +2,16 @@ Attribute VB_Name = "IntrinioUtilities"
 Option Explicit
 
 Public Sub IntrinioAPIKeys()
-Attribute IntrinioAPIKeys.VB_ProcData.VB_Invoke_Func = "I\n14"
     frmIntrinioAPIKeys.Show
 End Sub
 
 Public Sub IntrinioFixLinks()
-Attribute IntrinioFixLinks.VB_ProcData.VB_Invoke_Func = "F\n14"
     Dim Sht As Worksheet
     Application.ScreenUpdating = False
     
     For Each Sht In Worksheets
         Sht.Cells.Replace _
-            what:="'*\Intrinio_Excel_Addin.xlam'!", _
+            What:="'*\Intrinio_Excel_Addin.xlam'!", _
             Replacement:="", _
             LookAt:=xlPart, _
             SearchOrder:=xlByRows, _
@@ -22,12 +20,31 @@ Attribute IntrinioFixLinks.VB_ProcData.VB_Invoke_Func = "F\n14"
     
     For Each Sht In Worksheets
         Sht.Cells.Replace _
-            what:="'*Intrinio_Excel_Addin.xlam'!", _
+            What:="'*Intrinio_Excel_Addin.xlam'!", _
             Replacement:="", _
             LookAt:=xlPart, _
             SearchOrder:=xlByRows, _
             MatchCase:=False
     Next Sht
+    
+    For Each Sht In Worksheets
+        Sht.Cells.Replace _
+            What:="'*\Intrinio_Excel_Addin-32bit.xlam'!", _
+            Replacement:="", _
+            LookAt:=xlPart, _
+            SearchOrder:=xlByRows, _
+            MatchCase:=False
+    Next Sht
+    
+    For Each Sht In Worksheets
+        Sht.Cells.Replace _
+            What:="'*Intrinio_Excel_Addin-32bit.xlam'!", _
+            Replacement:="", _
+            LookAt:=xlPart, _
+            SearchOrder:=xlByRows, _
+            MatchCase:=False
+    Next Sht
+    Application.Run "ResetFindReplace"
     Application.ScreenUpdating = True
 End Sub
 
@@ -82,3 +99,31 @@ Public Sub IntrinioUnlink()
     Application.EnableCancelKey = xlInterrupt
     Application.Calculation = xlCalculationAutomatic
 End Sub
+
+Public Sub ResetFindReplace()
+   'Resets the find/replace dialog box options
+   Dim r As Range
+
+   On Error Resume Next
+
+   Set r = Cells.Find(What:="", _
+   LookIn:=xlFormulas, _
+   SearchOrder:=xlRows, _
+   LookAt:=xlPart, _
+   MatchCase:=False)
+
+   On Error GoTo 0
+
+   'Reset the defaults
+
+   On Error Resume Next
+
+   Set r = Cells.Find(What:="", _
+   LookIn:=xlFormulas, _
+   SearchOrder:=xlRows, _
+   LookAt:=xlPart, _
+   MatchCase:=False)
+
+   On Error GoTo 0
+End Sub
+

@@ -46,9 +46,7 @@ Public Sub IntrinioInitialize()
     
     On Error GoTo ErrorHandler
     
-    #If Mac Then
-    
-    #Else
+    #If Win32 Or Win64 Then
         Call DescribeIntrinioDataPoint
         Call DescribeIntrinioHistoricalPrices
         Call DescribeIntrinioHistoricalData
@@ -214,7 +212,6 @@ Private Function IntrinioCompanies(ticker As String, Item As String)
                         IntrinioCompanies = CompanyDic(ticker)(Item)
                     End If
                 End If
-            
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
                 IntrinioCompanies = "429"
@@ -434,7 +431,7 @@ Sub DescribeIntrinioDataPoint()
        Description:=FuncDesc, _
        Category:=Category, _
        ArgumentDescriptions:=ArgDesc
-       
+    
     FuncName = "IDP"
     Application.MacroOptions Macro:=FuncName, _
        Description:=FuncDesc, _
@@ -516,10 +513,8 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
         If DataPointDic.Exists(Key) = False Then
             Dim tags As String
             Dim requestItemCount As Integer
-            #If Mac Then
-                tags = Item
-                requestItemCount = 0
-            #ElseIf Win32 Or Win64 Then
+            #If Win32 Or Win64 Then
+
                 Dim DPRT_idenftifier As String
                 DPRT_idenftifier = identifier & "_DPRT"
                 If DataPointRequestedTags.Exists(DPRT_idenftifier) = True Then
@@ -846,35 +841,10 @@ End Sub
 Public Function IntrinioHistoricalPrices(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "daily")
 Attribute IntrinioHistoricalPrices.VB_Description = "Returns a historical price data point for a company based on the sequence number"
 Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
-    
-    Dim str_start_date As String
-    Dim str_end_date As String
-    Dim str_frequency As String
-
-    #If Mac Then
-        str_start_date = "2007-01-01"
-        str_end_date = ""
-        str_frequency = "daily"
-    #Else
-        str_start_date = start_date
-        str_end_date = end_date
-        str_frequency = frequency
-    #End If
-    
-    IntrinioHistoricalPrices = IntrinioPrices(ticker, Item, sequence, str_start_date, str_end_date, str_frequency)
-    
-End Function
-
-Public Function IntrinioPrices(ticker As String, Item As String, sequence As Integer, start_date As String, end_date As String, frequency As String)
-Attribute IntrinioPrices.VB_Description = "Returns a historical price data point for a company based on the sequence number"
-Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
     Dim index_pos As Integer
-    Dim str_start_date As String
-    Dim str_end_date As String
-    Dim str_frequency As String
     
     On Error GoTo ErrorHandler
     
@@ -948,63 +918,63 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             
             If Response.StatusCode = Ok Then
                 HistoricalPricesDic.Add Key, Response.Data("data")
-                IntrinioPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
-                If IntrinioPrices = Empty Then
-                    IntrinioPrices = ""
+                IntrinioHistoricalPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
+                If IntrinioHistoricalPrices = Empty Then
+                    IntrinioHistoricalPrices = ""
                 End If
                 If Item = "date" Then
-                    IntrinioPrices = VBA.DateValue(IntrinioPrices)
+                    IntrinioHistoricalPrices = VBA.DateValue(IntrinioHistoricalPrices)
                 Else
-                    IntrinioPrices = VBA.Round(IntrinioPrices * 1, 4)
+                    IntrinioHistoricalPrices = VBA.Round(IntrinioHistoricalPrices * 1, 4)
                 End If
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
-                IntrinioPrices = "Plan Limit Reached"
+                IntrinioHistoricalPrices = "Plan Limit Reached"
             ElseIf Response.StatusCode = 403 Then
-                IntrinioPrices = "Visit Intrinio.com to Subscribe"
+                IntrinioHistoricalPrices = "Visit Intrinio.com to Subscribe"
             Else
-                IntrinioPrices = ""
+                IntrinioHistoricalPrices = ""
             End If
         ElseIf HistoricalPricesDic.Exists(Key) = True Then
-            IntrinioPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
-            If IntrinioPrices = Empty Then
-                IntrinioPrices = ""
+            IntrinioHistoricalPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
+            If IntrinioHistoricalPrices = Empty Then
+                IntrinioHistoricalPrices = ""
             End If
             If Item = "date" Then
-                IntrinioPrices = VBA.DateValue(IntrinioPrices)
+                IntrinioHistoricalPrices = VBA.DateValue(IntrinioHistoricalPrices)
             Else
-                IntrinioPrices = VBA.Round(IntrinioPrices * 1, 4)
+                IntrinioHistoricalPrices = VBA.Round(IntrinioHistoricalPrices * 1, 4)
             End If
             
         End If
 
     Else
         If ticker = "" Then
-            IntrinioPrices = ""
+            IntrinioHistoricalPrices = ""
         ElseIf Item = "" Then
-            IntrinioPrices = ""
+            IntrinioHistoricalPrices = ""
         ElseIf APICallsAtLimit = True Then
             Key = ticker & "_" & start_date & "_" & end_date & "_" & frequency
             If HistoricalPricesDic.Exists(Key) = True Then
-                IntrinioPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
-                If IntrinioPrices = Empty Then
-                    IntrinioPrices = ""
+                IntrinioHistoricalPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
+                If IntrinioHistoricalPrices = Empty Then
+                    IntrinioHistoricalPrices = ""
                 End If
             Else
-                IntrinioPrices = "Plan Limit Reached"
+                IntrinioHistoricalPrices = "Plan Limit Reached"
             End If
         ElseIf LoginFailure = True Then
-            IntrinioPrices = "Invalid API Keys"
+            IntrinioHistoricalPrices = "Invalid API Keys"
         ElseIf coFailure = True Then
-            IntrinioPrices = "Invalid Ticker Symbol"
+            IntrinioHistoricalPrices = "Invalid Ticker Symbol"
         Else
-            IntrinioPrices = ""
+            IntrinioHistoricalPrices = ""
         End If
     End If
 ExitHere:
     Exit Function
 ErrorHandler:
-    IntrinioPrices = ""
+    IntrinioHistoricalPrices = ""
 End Function
 
 Sub DescribeIntrinioHistoricalData()
@@ -1038,8 +1008,6 @@ Sub DescribeIntrinioHistoricalData()
 End Sub
 
 Public Function IntrinioHistoricalData(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "", Optional data_type As String = "", Optional show_date As Boolean = False)
-Attribute IntrinioHistoricalData.VB_Description = "Returns a historical data point for a company based on the sequence number"
-Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
     
     Dim str_start_date As String
     Dim str_end_date As String
@@ -1047,19 +1015,11 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim str_data_type As String
     Dim bol_show_date As Boolean
 
-    #If Mac Then
-        str_start_date = "2010-01-01"
-        str_end_date = ""
-        str_frequency = ""
-        str_data_type = ""
-        bol_show_date = False
-    #Else
-        str_start_date = start_date
-        str_end_date = end_date
-        str_frequency = frequency
-        str_data_type = data_type
-        bol_show_date = show_date
-    #End If
+    str_start_date = start_date
+    str_end_date = end_date
+    str_frequency = frequency
+    str_data_type = data_type
+    bol_show_date = show_date
 
     IntrinioHistoricalData = IHD(ticker, Item, sequence, str_start_date, str_end_date, str_frequency, str_data_type, bol_show_date)
 End Function
@@ -1071,15 +1031,7 @@ Public Function IHD(ticker As String, Item As String, sequence As Integer, Optio
     Dim index_pos As Integer
     
     On Error GoTo ErrorHandler
-    
-    #If Mac Then
-        start_date = "2007-01-01"
-        end_date = ""
-        frequency = ""
-        data_type = ""
-        show_date = False
-    #End If
-    
+
     index_pos = InStr(ticker, "$")
     ticker = VBA.UCase(ticker)
     
@@ -1721,7 +1673,8 @@ Public Function IntrinioStandardizedFinancials(ticker As String, _
                            statement As String, _
                            fiscal_year As Integer, _
                            fiscal_period As String, _
-                           tag As String, rounding As String)
+                           tag As String, _
+                           Optional rounding As String = "A")
 Attribute IntrinioStandardizedFinancials.VB_Description = "Returns a historical standardized financial statement data point for a company, based on the tag, fiscal year and fiscal period."
 Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                            
@@ -1730,14 +1683,15 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim nKey As String
     Dim X As Variant
     Dim rTag As String
+    Dim rValue As Double
     Dim sValue As String
     Dim Value As Double
+    Dim Rounder As Double
     Dim api_ticker As String
     Dim coFailure As Boolean
     Dim fundamental_sequence As Integer
     Dim fundamental_type As String
-    Dim newValue As String
-
+    
     On Error GoTo ErrorHandler
     
     ticker = VBA.UCase(ticker)
@@ -1885,17 +1839,18 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 If StandardizedFinancialsDic(Key) Is Not Empty Then
                     
                     If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
-                        If rounding = CStr("K") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.00")
-                        ElseIf rounding = CStr("M") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.00")
-                        ElseIf rounding = CStr("B") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.00")
+                        Value = StandardizedFinancialsDic(eKey)
+                        If rounding = "K" Then
+                            Rounder = 1000
+                        ElseIf rounding = "M" Then
+                            Rounder = 1000000
+                        ElseIf rounding = "B" Then
+                            Rounder = 1000000000
                         Else
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.00")
+                            Rounder = 1
                         End If
-                        Value = CDbl(newValue)
-                        IntrinioStandardizedFinancials = Value
+                    
+                        IntrinioStandardizedFinancials = Value / Rounder
                     Else
                         IntrinioStandardizedFinancials = StandardizedFinancialsDic(eKey)
                     End If
@@ -1909,18 +1864,19 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
             
             If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
-
-                If rounding = CStr("K") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.00")
-                ElseIf rounding = CStr("M") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.00")
-                ElseIf rounding = CStr("B") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.00")
+                Value = StandardizedFinancialsDic(eKey)
+                
+                If rounding = "K" Then
+                    Rounder = 1000
+                ElseIf rounding = "M" Then
+                    Rounder = 1000000
+                ElseIf rounding = "B" Then
+                    Rounder = 1000000000
                 Else
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.00")
+                    Rounder = 1
                 End If
-                Value = CDbl(newValue)
-                IntrinioStandardizedFinancials = Value
+                
+                IntrinioStandardizedFinancials = Value / Rounder
             Else
                 IntrinioStandardizedFinancials = StandardizedFinancialsDic(eKey)
             End If
@@ -1951,15 +1907,8 @@ Public Function IntrinioFinancials(ticker As String, _
                            Optional rounding As String = "A")
 Attribute IntrinioFinancials.VB_Description = "Returns a historical standardized financial statement data point for a company, based on the tag, fiscal year and fiscal period."
 Attribute IntrinioFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
-    
-    Dim str_rnd As String
-    #If Mac Then
-        str_rnd = "A"
-    #Else
-        str_rnd = rounding
-    #End If
-    
-    IntrinioFinancials = IntrinioStandardizedFinancials(ticker, statement, fiscal_year, fiscal_period, tag, str_rnd)
+                           
+    IntrinioFinancials = IntrinioStandardizedFinancials(ticker, statement, fiscal_year, fiscal_period, tag, rounding)
                            
 End Function
 
@@ -2127,15 +2076,8 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim fundamental_sequence As Integer
     Dim fundamental_type As String
     Dim last_page As Integer
-    Dim str_item As String
 
     On Error GoTo ErrorHandler
-    
-    #If Mac Then
-        str_item = "tag"
-    #Else
-        str_item = Item
-    #End If
     
     ticker = VBA.UCase(ticker)
     
@@ -2209,14 +2151,14 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
                 last_page = Response.Data("total_pages")
                 If last_page > 0 Then
                     ReportedTagsDic.Add Key, Response.Data("data")
-                    If str_item = "domain_tag" Then
-                        If IsNull(ReportedTagsDic(Key)(sequence + 1)(str_item)) Then
+                    If Item = "domain_tag" Then
+                        If IsNull(ReportedTagsDic(Key)(sequence + 1)(Item)) Then
                             IntrinioReportedTags = ""
                         Else
-                            IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                            IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(Item)
                         End If
                     Else
-                        IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                        IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(Item)
                     End If
                 Else
                     IntrinioReportedTags = ""
@@ -2231,28 +2173,28 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioReportedTags = ""
             End If
         ElseIf ReportedTagsDic.Exists(Key) = True Then
-            If str_item = "domain_tag" Then
-                If IsNull(ReportedTagsDic(Key)(sequence + 1)(str_item)) Then
+            If Item = "domain_tag" Then
+                If IsNull(ReportedTagsDic(Key)(sequence + 1)(Item)) Then
                     IntrinioReportedTags = ""
                 Else
-                    IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                    IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(Item)
                 End If
             Else
-                IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(Item)
             End If
         End If
     Else
         If APICallsAtLimit = True Then
             Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period
             If ReportedTagsDic.Exists(Key) = True Then
-                If str_item = "domain_tag" Then
-                    If IsNull(ReportedTagsDic(Key)(sequence + 1)(str_item)) Then
+                If Item = "domain_tag" Then
+                    If IsNull(ReportedTagsDic(Key)(sequence + 1)(Item)) Then
                         IntrinioReportedTags = ""
                     Else
-                        IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                        IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(Item)
                     End If
                 Else
-                    IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                    IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(Item)
                 End If
             Else
                 IntrinioReportedTags = "Plan Limit Reached"
@@ -2314,13 +2256,6 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim fundamental_sequence As Integer
     Dim fundamental_type As String
     Dim last_page As Integer
-    Dim str_domain_tag As String
-    
-    #If Mac Then
-        str_domain_tag = ""
-    #Else
-        str_domain_tag = domain_tag
-    #End If
     
     On Error GoTo ErrorHandler
     
@@ -2408,7 +2343,7 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                         rValue = X("value")
                         ReportedFinancialsDic.Add nKey, rValue
                     Next
-                    eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & str_domain_tag
+                    eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & domain_tag
                     If VBA.Right(xbrl_tag, 8) = "Abstract" Then
                         IntrinioReportedFinancials = ""
                     ElseIf xbrl_tag = "" Then
@@ -2428,10 +2363,10 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioReportedFinancials = ""
             End If
         ElseIf ReportedFinancialsDic.Exists(Key) = True Then
-            If str_domain_tag = "" Then
+            If domain_tag = "" Then
                 eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag
             Else
-                eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & "_" & str_domain_tag
+                eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & "_" & domain_tag
             End If
             If VBA.Right(xbrl_tag, 8) = "Abstract" Then
                 IntrinioReportedFinancials = ""
@@ -2445,10 +2380,10 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
         If LoginFailure = True Then
             Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period
             If ReportedFinancialsDic.Exists(Key) = True Then
-                If str_domain_tag = "" Then
+                If domain_tag = "" Then
                     eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag
                 Else
-                    eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & "_" & str_domain_tag
+                    eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & "_" & domain_tag
                 End If
                 If VBA.Right(xbrl_tag, 8) = "Abstract" Then
                     IntrinioReportedFinancials = ""
@@ -2765,14 +2700,6 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim coFailure As Boolean
     Dim fundamental_sequence As Integer
     Dim fundamental_type As String
-    Dim newValue As String
-    Dim str_rnd As String
-    
-    #If Mac Then
-        str_rnd = "K"
-    #Else
-        str_rnd = rounding
-    #End If
     
     On Error GoTo ErrorHandler
     
@@ -2919,17 +2846,18 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 If BankFinancialsDic(Key) Is Not Empty Then
                     
                     If IsNumeric(BankFinancialsDic(eKey)) = True Then
-                        If str_rnd = "K" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,.00")
-                        ElseIf str_rnd = "M" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.00")
-                        ElseIf str_rnd = "B" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.00")
+                        Value = BankFinancialsDic(eKey)
+                        If rounding = "K" Then
+                            Rounder = 1000
+                        ElseIf rounding = "M" Then
+                            Rounder = 1000000
+                        ElseIf rounding = "B" Then
+                            Rounder = 1000000000
                         Else
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0.00")
+                            Rounder = 1
                         End If
                     
-                        IntrinioBankFinancials = CDbl(newValue)
+                        IntrinioBankFinancials = Value / Rounder
                     Else
                         IntrinioBankFinancials = BankFinancialsDic(eKey)
                     End If
@@ -2943,17 +2871,19 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
             
             If IsNumeric(BankFinancialsDic(eKey)) = True Then
-                If str_rnd = "K" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,.00")
-                ElseIf str_rnd = "M" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.00")
-                ElseIf str_rnd = "B" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.00")
+                Value = BankFinancialsDic(eKey)
+                
+                If rounding = "K" Then
+                    Rounder = 1000
+                ElseIf rounding = "M" Then
+                    Rounder = 1000000
+                ElseIf rounding = "B" Then
+                    Rounder = 1000000000
                 Else
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0.00")
+                    Rounder = 1
                 End If
-            
-                IntrinioBankFinancials = CDbl(newValue)
+                
+                IntrinioBankFinancials = Value / Rounder
             Else
                 IntrinioBankFinancials = BankFinancialsDic(eKey)
             End If
@@ -3031,7 +2961,7 @@ Private Function IntrinioAddinVersion(Item As String)
             IntrinioAddinVersion = Response.StatusCode
         End If
     ElseIf Response.StatusCode = 403 Then
-        IntrinioAddinVersion = "Visit Intrinio.com to Subscribe"
+        IntrinioAddinVersion = Response.StatusCode
     Else
         IntrinioAddinVersion = ""
     End If
@@ -3048,9 +2978,7 @@ Sub IntrinioRibbon()
   
     On Error GoTo ErrorHandler
     
-    #If Mac Then
-    
-    #Else
+    #If Win32 Or Win64 Then
         refresh = False
         
         hFile = FreeFile
@@ -3139,9 +3067,7 @@ Sub IntrinioRibbon()
 ExitHere:
     Exit Sub
 ErrorHandler:
-    #If Mac Then
-    
-    #Else
+    #If Win32 Or Win64 Then
         hFile = FreeFile
         appdata = Environ("LOCALAPPDATA")
         path = appdata & "\Microsoft\Office\"
@@ -3216,9 +3142,7 @@ End Sub
 Sub IntrinioResetRibbon()
     Dim hFile As Long
     Dim path As String, fileName As String, appdata As String, FilePath As String
-    #If Mac Then
-    
-    #Else
+    #If Win32 Or Win64 Then
         hFile = FreeFile
         appdata = Environ("LOCALAPPDATA")
         path = appdata & "\Microsoft\Office\"
@@ -3273,7 +3197,7 @@ Public Sub IntrinioRefresh()
         Application.CalculateFull
     ElseIf status = "429" Then
         Application.CalculateFull
-    ElseIf status = "403" Then
+    ElseIf Response.StatusCode = 403 Then
         Application.CalculateFull
     End If
 End Sub
@@ -3335,9 +3259,7 @@ Public Sub IntrinioTemplates()
     Dim NewFile As String
     Dim selectedTemplateName As String, userprofile As String, userprofilepath As String
 
-    #If Mac Then
-    
-    #Else
+    #If Win32 Or Win64 Then
         ChDir Intrinio_Excel_Addin_Path & "\Templates"
         
         fileName = Application.GetOpenFilename("Intrinio Templates (*.xlsm),*.xlsm")
@@ -3428,3 +3350,4 @@ Private Function ValidAddress(strAddress As String) As Boolean
     Set r = Range(strAddress)
     If Not r Is Nothing Then ValidAddress = True
 End Function
+

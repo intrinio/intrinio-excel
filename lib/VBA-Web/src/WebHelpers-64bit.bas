@@ -144,10 +144,10 @@ Const AUTOPROXY_DETECT_TYPE_DNS = 2
 ' === VBA-UTC Headers
 #If Mac Then
 
-Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
-Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
-Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
-Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
+Private Declare PtrSafe Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As LongPtr
+Private Declare PtrSafe Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As LongPtr) As LongPtr
+Private Declare PtrSafe Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As LongPtr, ByVal utc_Number As LongPtr, ByVal utc_File As LongPtr) As LongPtr
+Private Declare PtrSafe Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As LongPtr) As LongPtr
 
 #ElseIf VBA7 Then
 
@@ -237,10 +237,10 @@ Public JsonOptions As json_Options
 ' === End VBA-JSON
 
 #If Mac Then
-Private Declare Function web_popen Lib "libc.dylib" Alias "popen" (ByVal Command As String, ByVal mode As String) As Long
-Private Declare Function web_pclose Lib "libc.dylib" Alias "pclose" (ByVal File As Long) As Long
-Private Declare Function web_fread Lib "libc.dylib" Alias "fread" (ByVal outStr As String, ByVal size As Long, ByVal Items As Long, ByVal stream As Long) As Long
-Private Declare Function web_feof Lib "libc.dylib" Alias "feof" (ByVal File As Long) As Long
+Private Declare PtrSafe Function web_popen Lib "libc.dylib" Alias "popen" (ByVal command As String, ByVal mode As String) As LongPtr
+Private Declare PtrSafe Function web_pclose Lib "libc.dylib" Alias "pclose" (ByVal file As LongPtr) As Long
+Private Declare PtrSafe Function web_fread Lib "libc.dylib" Alias "fread" (ByVal outStr As String, ByVal size As LongPtr, ByVal items As LongPtr, ByVal stream As LongPtr) As Long
+Private Declare PtrSafe Function web_feof Lib "libc.dylib" Alias "feof" (ByVal file As LongPtr) As LongPtr
 #End If
 
 Public Const WebUserAgent As String = "VBA-Web v4.1.1 (https://github.com/VBA-tools/VBA-Web)"
@@ -1315,7 +1315,7 @@ Public Function GetUrlParts(Url As String) As Dictionary
     web_Parts.Add "Protocol", Replace(web_pElHelper.Protocol, ":", "", Count:=1)
     web_Parts.Add "Host", web_pElHelper.hostname
     web_Parts.Add "Port", web_pElHelper.port
-    web_Parts.Add "Path", web_pElHelper.pathname
+    web_Parts.Add "Path", web_pElHelper.PathName
     web_Parts.Add "Querystring", Replace(web_pElHelper.Search, "?", "", Count:=1)
     web_Parts.Add "Hash", Replace(web_pElHelper.Hash, "#", "", Count:=1)
 #End If
@@ -1592,7 +1592,7 @@ End Sub
 ''
 Public Function ExecuteInShell(web_Command As String) As ShellResult
 #If Mac Then
-    Dim web_File As Long
+    Dim web_File As LongPtr
     Dim web_Chunk As String
     Dim web_Read As Long
 
