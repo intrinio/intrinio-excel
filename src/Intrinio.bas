@@ -29,7 +29,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://api.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.6.0"
+Public Const Intrinio_Addin_Version = "2.6.1"
 
 Public Sub IntrinioInitialize()
 
@@ -443,6 +443,8 @@ Sub DescribeIntrinioDataPoint()
 End Sub
 
 Public Function IDP(identifier As String, Item As String)
+Attribute IDP.VB_Description = "Returns a data point for a company based on a selected tag"
+Attribute IDP.VB_ProcData.VB_Invoke_Func = " \n19"
     IDP = IntrinioDataPoint(identifier, Item)
 End Function
 
@@ -1065,6 +1067,8 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
 End Function
 
 Public Function IHD(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "", Optional data_type As String = "", Optional show_date As Boolean = False)
+Attribute IHD.VB_Description = "Returns a historical data point for a company based on the sequence number"
+Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -1886,13 +1890,13 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                     
                     If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
                         If rounding = CStr("K") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.00")
+                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.000000")
                         ElseIf rounding = CStr("M") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.00")
+                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.000000")
                         ElseIf rounding = CStr("B") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.00")
+                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.000000")
                         Else
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.00")
+                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.000000")
                         End If
                         Value = CDbl(newValue)
                         IntrinioStandardizedFinancials = Value
@@ -1911,13 +1915,13 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
 
                 If rounding = CStr("K") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.00")
+                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.000000")
                 ElseIf rounding = CStr("M") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.00")
+                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.000000")
                 ElseIf rounding = CStr("B") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.00")
+                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.000000")
                 Else
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.00")
+                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.000000")
                 End If
                 Value = CDbl(newValue)
                 IntrinioStandardizedFinancials = Value
@@ -2920,13 +2924,13 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                     
                     If IsNumeric(BankFinancialsDic(eKey)) = True Then
                         If str_rnd = "K" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,.00")
+                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
                         ElseIf str_rnd = "M" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.00")
+                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
                         ElseIf str_rnd = "B" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.00")
+                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
                         Else
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0.00")
+                            newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
                         End If
                     
                         IntrinioBankFinancials = CDbl(newValue)
@@ -2944,13 +2948,13 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             
             If IsNumeric(BankFinancialsDic(eKey)) = True Then
                 If str_rnd = "K" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,.00")
+                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
                 ElseIf str_rnd = "M" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.00")
+                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
                 ElseIf str_rnd = "B" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.00")
+                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
                 Else
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0.00")
+                    newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
                 End If
             
                 IntrinioBankFinancials = CDbl(newValue)

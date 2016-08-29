@@ -29,7 +29,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://api.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.6.0"
+Public Const Intrinio_Addin_Version = "2.6.1"
 
 Public Sub IntrinioInitialize()
 
