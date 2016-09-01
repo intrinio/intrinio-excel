@@ -8,7 +8,8 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
-#If Win32 Or Win64 Then
+#If Mac Then
+#Else
     Private WithEvents CopyCtl As CommandBarButton
 Attribute CopyCtl.VB_VarHelpID = -1
     Private WithEvents CutCtl As CommandBarButton

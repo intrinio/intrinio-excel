@@ -46,7 +46,9 @@ Public Sub IntrinioInitialize()
     
     On Error GoTo ErrorHandler
     
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    
+    #Else
         Call DescribeIntrinioDataPoint
         Call DescribeIntrinioHistoricalPrices
         Call DescribeIntrinioHistoricalData
@@ -440,6 +442,8 @@ Sub DescribeIntrinioDataPoint()
 End Sub
 
 Public Function IDP(identifier As String, Item As String)
+Attribute IDP.VB_Description = "Returns a data point for a company based on a selected tag"
+Attribute IDP.VB_ProcData.VB_Invoke_Func = " \n19"
     IDP = IntrinioDataPoint(identifier, Item)
 End Function
 
@@ -513,7 +517,10 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
         If DataPointDic.Exists(Key) = False Then
             Dim tags As String
             Dim requestItemCount As Integer
-            #If Win32 Or Win64 Then
+            #If Mac Then
+                tags = Item
+                requestItemCount = 0
+            #ElseIf Win32 Or Win64 Then
 
                 Dim DPRT_idenftifier As String
                 DPRT_idenftifier = identifier & "_DPRT"
@@ -1008,6 +1015,8 @@ Sub DescribeIntrinioHistoricalData()
 End Sub
 
 Public Function IntrinioHistoricalData(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "", Optional data_type As String = "", Optional show_date As Boolean = False)
+Attribute IntrinioHistoricalData.VB_Description = "Returns a historical data point for a company based on the sequence number"
+Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
     
     Dim str_start_date As String
     Dim str_end_date As String
@@ -1025,6 +1034,8 @@ Public Function IntrinioHistoricalData(ticker As String, Item As String, sequenc
 End Function
 
 Public Function IHD(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "", Optional data_type As String = "", Optional show_date As Boolean = False)
+Attribute IHD.VB_Description = "Returns a historical data point for a company based on the sequence number"
+Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -2978,7 +2989,8 @@ Sub IntrinioRibbon()
   
     On Error GoTo ErrorHandler
     
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    #Else
         refresh = False
         
         hFile = FreeFile
@@ -3067,7 +3079,8 @@ Sub IntrinioRibbon()
 ExitHere:
     Exit Sub
 ErrorHandler:
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    #Else
         hFile = FreeFile
         appdata = Environ("LOCALAPPDATA")
         path = appdata & "\Microsoft\Office\"
@@ -3142,7 +3155,8 @@ End Sub
 Sub IntrinioResetRibbon()
     Dim hFile As Long
     Dim path As String, fileName As String, appdata As String, FilePath As String
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    #Else
         hFile = FreeFile
         appdata = Environ("LOCALAPPDATA")
         path = appdata & "\Microsoft\Office\"
@@ -3259,7 +3273,8 @@ Public Sub IntrinioTemplates()
     Dim NewFile As String
     Dim selectedTemplateName As String, userprofile As String, userprofilepath As String
 
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    #Else
         ChDir Intrinio_Excel_Addin_Path & "\Templates"
         
         fileName = Application.GetOpenFilename("Intrinio Templates (*.xlsm),*.xlsm")
