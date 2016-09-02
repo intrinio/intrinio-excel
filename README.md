@@ -103,7 +103,7 @@ Below are all of the Excel custom functions for accessing the Intrinio API throu
 ## IntrinioDataPoint
 
 **=`IntrinioDataPoint(identifier,item)`**  
-Returns that most recent data point for a selected identifier (ticker symbol, CIK ID, Federal Reserve Economic Data Series ID, etc.) for a selected tag. The complete list of tags available through this function are available <a href="/tags.html#data-point" target="_blank">here</a>. Income statement, cash flow statement, and ratios are returned as trailing twelve months values. All other data points are returned as their most recent value, either as of the last release financial statement or the most recent reported value.
+Returns that most recent data point for a selected identifier (ticker symbol, CIK ID, Federal Reserve Economic Data Series ID, etc.) for a selected tag. The complete list of tags available through this function are available <a href="http://docs.intrinio.com/tags.html#data-point" target="_blank">here</a>. Income statement, cash flow statement, and ratios are returned as trailing twelve months values. All other data points are returned as their most recent value, either as of the last release financial statement or the most recent reported value.
 
 ### Parameters
 
@@ -134,13 +134,13 @@ AAPL
 0.0612
 ```
 
-*   **identifier** - an identifier for the company or data point, including the SEC CIK ID, FRED Series ID, or Damodaran ERP: **<a href="http://www.sec.gov/edgar/searchedgar/cik.htm" target="_blank">CENTRAL INDEX KEY</a> | <a href="/master/economic-indices.html" target="_blank">ECONOMIC INDICES</a> | <a href="/tags.html#dmd-erp" target="_blank">DAMODARAN ERP</a> | <a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="/master/stock-indices.html" target="_blank">INDEX SYMBOL</a>**
-*   **item** - the specified standardized tag or series ID requested: **<a href="/tags.html#data-point" target="_blank">INTRINIO DATA POINT TAGS</a> | <a href="/tags.html#economic-data" target="_blank">ECONOMIC TAGS</a> | <a href="/tags.html#dmd-erp" target="_blank">DAMODARAN ERP</a>**
+*   **identifier** - an identifier for the company or data point, including the SEC CIK ID, FRED Series ID, or Damodaran ERP: **<a href="http://www.sec.gov/edgar/searchedgar/cik.htm" target="_blank">CENTRAL INDEX KEY</a> | <a href="http://docs.intrinio.com/master/economic-indices.html" target="_blank">ECONOMIC INDICES</a> | <a href="http://docs.intrinio.com/tags.html#dmd-erp" target="_blank">DAMODARAN ERP</a> | <a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="http://docs.intrinio.com/master/stock-indices.html" target="_blank">INDEX SYMBOL</a>**
+*   **item** - the specified standardized tag or series ID requested: **<a href="http://docs.intrinio.com/tags.html#data-point" target="_blank">INTRINIO DATA POINT TAGS</a> | <a href="http://docs.intrinio.com/tags.html#economic-data" target="_blank">ECONOMIC TAGS</a> | <a href="http://docs.intrinio.com/tags.html#dmd-erp" target="_blank">DAMODARAN ERP</a>**
 
 ## IntrinioHistoricalData
 
 **`=IntrinioHistoricalData(ticker,item,sequence,start_date,end_date,frequency,data_type)`**  
-Returns that historical data for for a selected identifier (ticker symbol or index symbol) for a selected tag.  The complete list of tags available through this function are available <a href="/tags.html#historical_data" target="_blank">here</a>.  Income statement, cash flow statement, and ratios are returned as trailing twelve months values by default, but can be changed with the type parametrer.  All other historical data points are returned as their value on a certain day based on filings reported as of that date.
+Returns that historical data for for a selected identifier (ticker symbol or index symbol) for a selected tag.  The complete list of tags available through this function are available <a href="http://docs.intrinio.com/tags.html#historical_data" target="_blank">here</a>.  Income statement, cash flow statement, and ratios are returned as trailing twelve months values by default, but can be changed with the type parametrer.  All other historical data points are returned as their value on a certain day based on filings reported as of that date.
 
 ### Parameters
 
@@ -159,8 +159,8 @@ Returns that historical data for for a selected identifier (ticker symbol or ind
 110.38
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the company's common stock or index.  If the company is foreign, use the stock exchange code, followed by a colon, then the ticker.  You may request up to 150 tickers at once by separating them by a coma (each ticker and item combination requested will count as 1 query of the API): **<a href="/master/us-securities.html" target="_blank">TICKER SYMBOL</a> | <a href="/master/stock-indices.html" target="_blank">INDEX SYMBOL</a> | <a href="/master/economic-indices.html" target="_blank">FRED SYMBOL</a> | <a href="/master/sic-indices.html" target="_blank">SIC SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID</a>**
-*   **item** - the specified standardized tag requested:  **<a href="/tags.html#historical-data" target="_blank">INTRINIO TAGS</a> | <a href="/tags.html#economic-data" target="_blank">ECONOMIC TAGS</a>**
+*   **ticker** - the stock market ticker symbol associated with the company's common stock or index.  If the company is foreign, use the stock exchange code, followed by a colon, then the ticker.  You may request up to 150 tickers at once by separating them by a coma (each ticker and item combination requested will count as 1 query of the API): **<a href="http://docs.intrinio.com/master/us-securities.html" target="_blank">TICKER SYMBOL</a> | <a href="http://docs.intrinio.com/master/stock-indices.html" target="_blank">INDEX SYMBOL</a> | <a href="http://docs.intrinio.com/master/economic-indices.html" target="_blank">FRED SYMBOL</a> | <a href="http://docs.intrinio.com/master/sic-indices.html" target="_blank">SIC SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID</a>**
+*   **item** - the specified standardized tag requested:  **<a href="http://docs.intrinio.com/tags.html#historical-data" target="_blank">INTRINIO TAGS</a> | <a href="http://docs.intrinio.com/tags.html#economic-data" target="_blank">ECONOMIC TAGS</a>**
 *   **sequence** - an integer 0 or greater for calling a single historical data point from the first entry, based on sort order: **`0..last available`**
 *   **start_date** (optional) - the first date in which historical stock prices are delivered - historical daily prices go back to 1996 for most companies, but some go back further to the 1970s or to the date of the IPO: **`YYYY-MM-DD`**
 *   **end_date** (optional, default=today) - the last date in which historical stock prices are delivered - end of day prices are available around 5 p.m. EST and 15 minute delayed prices are updated every minute throughout the trading day: **`YYYY-MM-DD`**
@@ -197,7 +197,7 @@ Returns professional-grade historical stock prices for a company. New EOD prices
 110.38
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the companies common stock securities:**<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
+*   **ticker** - the stock market ticker symbol associated with the companies common stock securities:**<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
 *   **item** - the selected observation of the historical prices:**`date | open | high | low | close | volume | ex_dividend | split_ratio | adj_open | adj_high | adj_low | adj_close | adj_volume`**
 *   **sequence** - an integer 0 or greater for calling a single stock historical stock price data point from the first entry, based on sort order:**`0..last available`**
 *   **start_date** (optional, all historical prices for the security will be queried memory, which will result in a slower loading time) - the first date in which historical stock prices are delivered - historical daily prices go back to 1996 for most companies, but some go back further to the 1970s or to the date of the IPO:**`YYYY-MM-DD`**
@@ -225,7 +225,7 @@ Q3
 2015
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
+*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
 *   **statement** - the financial statement requested, options include the income statement, balance sheet, statement of cash flows and calculated metrics and ratios :**`income_statement | balance_sheet | cash_flow_statement | calculations`**
 *   **period_type** - the type of periods requested - includes fiscal years for annual data, quarters for quarterly data and trailing twelve months for annual data on a quarterly basis: **`FY | QTR | TTM | YTD`**
 *   **sequence** - an integer 0 or greater for calling a single fundamental from the first entry: **`0..last available`**
@@ -236,8 +236,8 @@ Q3
 **`=IntrinioTags(ticker,statement,sequence,item)`**  
 Returns the As Reported XBRL tags and labels for a given ticker, statement, and date or fiscal year/fiscal quarter.
 
-A basic list of all industrial standardized tags can be found <a href="/tags.html#industrial" target="_blank">here</a>.
-A basic list of all financial standardized tags can be found <a href="/tags.html#financial" target="_blank">here</a>.
+A basic list of all industrial standardized tags can be found <a href="http://docs.intrinio.com/tags.html#industrial" target="_blank">here</a>.
+A basic list of all financial standardized tags can be found <a href="http://docs.intrinio.com/tags.html#financial" target="_blank">here</a>.
 
 ### Parameters
 
@@ -251,7 +251,7 @@ operatingrevenue
 Short-Term Investments
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
+*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
 *   **statement** - the financial statement requested, options include the income statement, balance sheet, statement of cash flows, calculated metrics and ratios, and current data points :**`income_statement | balance_sheet | cash_flow_statement | calculations`**
 *   **sequence** - an integer 0 or greater for calling a single tag from the first entry, based on order: **`0..last available`**
 *   **item**  - the returned value for the data tag: **`name | tag | balance | unit`**
@@ -279,11 +279,11 @@ For example, it is possible to compare total revenues between two companies as o
 37,037
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
+*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
 *   **statement** - the financial statement requested, options include the income statement, balance sheet, statement of cash flows and calculated metrics and ratios : **`income_statement | balance_sheet | cash_flow_statement | calculations`**
 *   **fiscal_year** - the fiscal year associated with the fundamental OR the sequence of the requested fundamental (i.e. 0 is the first available fundamental associated with the fiscal period type): **`YYYY`** OR **`0..last available`**
 *   **fiscal_period** - the fiscal period associated with the fundamental, or the fiscal period type in association with the sequence selected in the fiscal year parameter: **`FY | Q1 | Q2 | Q3 | Q4 | Q1TTM | Q2TTM | Q3TTM | Q2YTD | Q3YTD `** OR **`FY | QTR | YTD | TTM`**
-*   **tag** - the specified standardized tag: **<a href="/tags.html#industrial" target="_blank">STANDARDIZED INDUSTRIAL TAGS</a> | <a href="/tags.html#financial" target="_blank">STANDARDIZED FINANCIAL TAGS</a>**
+*   **tag** - the specified standardized tag: **<a href="http://docs.intrinio.com/tags.html#industrial" target="_blank">STANDARDIZED INDUSTRIAL TAGS</a> | <a href="http://docs.intrinio.com/tags.html#financial" target="_blank">STANDARDIZED FINANCIAL TAGS</a>**
 *   **rounding** (optional, actuals by default) - round the returned value (actuals, thousands, millions, billions):**`A | K | M | B`**
 
 ## IntrinioReportedFundamentals
@@ -307,7 +307,7 @@ Q1
 2013-12-28
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the companies common stock securities:**<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
+*   **ticker** - the stock market ticker symbol associated with the companies common stock securities:**<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
 *   **statement** - the financial statement requested, options include the income statement, balance sheet and statement of cash flows: **`income_statement | balance_sheet | cash_flow_statement`**
 *   **period_type** - the type of periods requested - includes fiscal years for annual data, quarters for quarterly data: **`FY | QTR`**
 *   **sequence** - an integer 0 or greater for calling a single fundamental from the first entry: **`0..last available`**
@@ -338,7 +338,7 @@ Retained earnings
 RetainedEarningsAccumulatedDeficit
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the companies common stock securities:**<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
+*   **ticker** - the stock market ticker symbol associated with the companies common stock securities:**<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
 *   **statement** - the financial statement requested: **`income_statement | balance_sheet | cash_flow_statement`**
 *   **fiscal_year** - the fiscal year associated with the fundamental OR the sequence of the requested fundamental (i.e. 0 is the first available fundamental associated with the fiscal period type): **`YYYY`** OR **`**`0..last available`**`**
 *   **fiscal_period** - the fiscal period associated with the fundamental, or the fiscal period type in association with the sequence selected in the fiscal year parameter: **`FY | Q1 | Q2 | Q3 | Q4 | Q1TTM | Q2TTM | Q3TTM | Q2YTD | Q3YTD` **OR **`FY | QTR | YTD | TTM`**
@@ -369,7 +369,7 @@ Returns the financial data directly from the xbrl filing of the company's financ
 40,072,000,000
 ```
 
-*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
+*   **ticker** - the stock market ticker symbol associated with the companies common stock securities: **<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a>**
 *   **statement** - the financial statement requested, options include the income statement, balance sheet, statement of cash flows and calculated metrics and ratios: **`income_statement | balance_sheet | cash_flow_statement`**
 *   **fiscal_year** - the fiscal year associated with the fundamental OR the sequence of the requested fundamental (i.e. 0 is the first available fundamental associated with the fiscal period type): **`YYYY`** OR **`0..last available`**
 *   **fiscal_period** - the fiscal period associated with the fundamental, or the fiscal period type in association with the sequence selected in the fiscal year parameter: **`FY | Q1 | Q2 | Q3 | Q4 | Q1TTM | Q2TTM | Q3TTM | Q2YTD | Q3YTD` **OR **`**`FY | QTR | YTD | TTM`**`**
@@ -397,7 +397,7 @@ Q3
 2015
 ```
 
-*   **identifier** - the stock market ticker symbol associated with the companies common stock securities or the Federal Reserve RSSD ID unique identifier for the bank: **<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID LOOKUP</a>**
+*   **identifier** - the stock market ticker symbol associated with the companies common stock securities or the Federal Reserve RSSD ID unique identifier for the bank: **<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID LOOKUP</a>**
 *   **statement** - (optional, returns all available statements) - the call report/UBPR financial statement requested
 *   **period_type** - the type of periods requested - includes fiscal years for annual data, quarters for quarterly data and trailing twelve months for annual data on a quarterly basis: **`FY | YTD`**
 *   **sequence** - an integer 0 or greater for calling a single fundamental from the first entry: **`0..last available`**
@@ -420,7 +420,7 @@ RIADB489
 Goodwill
 ```
 
-*   **identifier** - the stock market ticker symbol associated with the companies common stock securities or the Federal Reserve RSSD ID unique identifier for the bank: **<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID LOOKUP</a>**
+*   **identifier** - the stock market ticker symbol associated with the companies common stock securities or the Federal Reserve RSSD ID unique identifier for the bank: **<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID LOOKUP</a>**
 *   **statement** - (optional, returns all available statements) - the call report/UBPR financial statement requested
 *   **sequence** - an integer 0 or greater for calling a single tag from the first entry, based on order: **`0..last available`**
 *   **item**  - the returned value for the data tag: **`name | tag | balance | unit`**
@@ -443,7 +443,7 @@ Returns professional-grade historical financial data for bank and bank holding c
 18,313.937
 ```
 
-*   **identifier** - the stock market ticker symbol associated with the companies common stock securities or the Federal Reserve RSSD ID unique identifier for the bank: **<a href="/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID LOOKUP</a>**
+*   **identifier** - the stock market ticker symbol associated with the companies common stock securities or the Federal Reserve RSSD ID unique identifier for the bank: **<a href="http://docs.intrinio.com/master/us-securities.html#home" target="_blank">TICKER SYMBOL</a> | <a href="https://www.ffiec.gov/nicpubweb/nicweb/SearchForm.aspx" target="_blank">RSSD ID LOOKUP</a>**
 *   **statement** - (optional, returns all available statements) - the call report/UBPR financial statement requested
 *   **fiscal_year** - the fiscal year associated with the fundamental OR the sequence of the requested fundamental (i.e. 0 is the first available fundamental associated with the fiscal period type): **`YYYY`** OR **`0..last available`**
 *   **fiscal_period** - the fiscal period associated with the fundamental, or the fiscal period type in association with the sequence selected in the fiscal year parameter: **`FY | Q1 | Q2 | Q3 | Q4 | Q2YTD | Q3YTD `** OR **`FY | QTR | YTD | TTM`**
