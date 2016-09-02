@@ -124,7 +124,6 @@ AAPL
 
 199800000000.0
 
-
 =IntrinioDataPoint("FRED.GDP","value")
 
 18,034.8
@@ -148,7 +147,6 @@ Returns that historical data for for a selected identifier (ticker symbol or ind
 =IntrinioHistoricalData("AAPL","open_price",0)
 
 121.85
-
 
 =IntrinioHistoricalData("AAPL","adj_close_price",0,"2012-01-01","2012-12-31")
 
