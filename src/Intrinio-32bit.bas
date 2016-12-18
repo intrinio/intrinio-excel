@@ -29,7 +29,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://api.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.6.1"
+Public Const Intrinio_Addin_Version = "2.7.1"
 
 Public Sub IntrinioInitialize()
 
@@ -141,6 +141,8 @@ Public Sub IntrinioInitialize()
                     If answer = vbYes Then
                         #If Mac Then
                             web_url = IntrinioAddinVersion("mac_download_url")
+                            web_url = VBA.Left(web_url, Len(web_url) - 4)
+                            web_url = web_url + "-32bit.zip"
                         #ElseIf Win32 Or Win64 Then
                             web_url = IntrinioAddinVersion("windows_download_url")
                         #Else
@@ -3211,7 +3213,7 @@ Public Sub IntrinioRefresh()
         Application.CalculateFull
     ElseIf status = "429" Then
         Application.CalculateFull
-    ElseIf Response.StatusCode = 403 Then
+    ElseIf status = "403" Then
         Application.CalculateFull
     End If
 End Sub
@@ -3248,6 +3250,8 @@ Public Sub IntrinioUpdate()
             If answer = vbYes Then
                 #If Mac Then
                     web_url = IntrinioAddinVersion("mac_download_url")
+                    web_url = VBA.Left(web_url, Len(web_url) - 4)
+                    web_url = web_url + "-32bit.zip"
                 #ElseIf Win32 Or Win64 Then
                     web_url = IntrinioAddinVersion("windows_download_url")
                 #Else

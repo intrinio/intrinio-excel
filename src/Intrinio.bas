@@ -29,7 +29,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://api.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.6.1"
+Public Const Intrinio_Addin_Version = "2.7.1"
 
 Public Sub IntrinioInitialize()
 
@@ -141,6 +141,8 @@ Public Sub IntrinioInitialize()
                     If answer = vbYes Then
                         #If Mac Then
                             web_url = IntrinioAddinVersion("mac_download_url")
+                            web_url = VBA.Left(web_url, Len(web_url) - 4)
+                            web_url = web_url + "-64bit.zip"
                         #ElseIf Win32 Or Win64 Then
                             web_url = IntrinioAddinVersion("windows_download_url")
                         #Else
@@ -367,7 +369,7 @@ Private Function IntrinioBanks(identifier As String, Item As String)
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
-            Debug.Print Response.Content
+
             If Response.StatusCode = Ok Then
                 If Response.Data Is Nothing Then
                     IntrinioBanks = ""
@@ -853,16 +855,10 @@ Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim str_end_date As String
     Dim str_frequency As String
 
-    #If Mac Then
-        str_start_date = "2007-01-01"
-        str_end_date = ""
-        str_frequency = "daily"
-    #Else
-        str_start_date = start_date
-        str_end_date = end_date
-        str_frequency = frequency
-    #End If
-    
+    str_start_date = start_date
+    str_end_date = end_date
+    str_frequency = frequency
+
     IntrinioHistoricalPrices = IntrinioPrices(ticker, Item, sequence, str_start_date, str_end_date, str_frequency)
     
 End Function
@@ -1049,19 +1045,11 @@ Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim str_data_type As String
     Dim bol_show_date As Boolean
 
-    #If Mac Then
-        str_start_date = "2010-01-01"
-        str_end_date = ""
-        str_frequency = ""
-        str_data_type = ""
-        bol_show_date = False
-    #Else
-        str_start_date = start_date
-        str_end_date = end_date
-        str_frequency = frequency
-        str_data_type = data_type
-        bol_show_date = show_date
-    #End If
+    str_start_date = start_date
+    str_end_date = end_date
+    str_frequency = frequency
+    str_data_type = data_type
+    bol_show_date = show_date
 
     IntrinioHistoricalData = IHD(ticker, Item, sequence, str_start_date, str_end_date, str_frequency, str_data_type, bol_show_date)
 End Function
@@ -1075,14 +1063,6 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim index_pos As Integer
     
     On Error GoTo ErrorHandler
-    
-    #If Mac Then
-        start_date = "2007-01-01"
-        end_date = ""
-        frequency = ""
-        data_type = ""
-        show_date = False
-    #End If
     
     index_pos = InStr(ticker, "$")
     ticker = VBA.UCase(ticker)
@@ -1957,11 +1937,8 @@ Attribute IntrinioFinancials.VB_Description = "Returns a historical standardized
 Attribute IntrinioFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     
     Dim str_rnd As String
-    #If Mac Then
-        str_rnd = "A"
-    #Else
-        str_rnd = rounding
-    #End If
+
+    str_rnd = rounding
     
     IntrinioFinancials = IntrinioStandardizedFinancials(ticker, statement, fiscal_year, fiscal_period, tag, str_rnd)
                            
@@ -2135,11 +2112,7 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
 
     On Error GoTo ErrorHandler
     
-    #If Mac Then
-        str_item = "tag"
-    #Else
-        str_item = Item
-    #End If
+    str_item = Item
     
     ticker = VBA.UCase(ticker)
     
@@ -2320,11 +2293,7 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim last_page As Integer
     Dim str_domain_tag As String
     
-    #If Mac Then
-        str_domain_tag = ""
-    #Else
-        str_domain_tag = domain_tag
-    #End If
+    str_domain_tag = domain_tag
     
     On Error GoTo ErrorHandler
     
@@ -2772,11 +2741,7 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim newValue As String
     Dim str_rnd As String
     
-    #If Mac Then
-        str_rnd = "K"
-    #Else
-        str_rnd = rounding
-    #End If
+    str_rnd = rounding
     
     On Error GoTo ErrorHandler
     
@@ -2919,26 +2884,25 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
 
             If BankFinancialsDic.Exists(Key) = True Then
-
-                If BankFinancialsDic(Key) Is Not Empty Then
+                
+                If IsNumeric(BankFinancialsDic(eKey)) = True Then
+                    If str_rnd = "K" Then
+                        newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
+                    ElseIf str_rnd = "M" Then
+                        newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
+                    ElseIf str_rnd = "B" Then
+                        newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
+                    Else
+                        newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
+                    End If
                     
-                    If IsNumeric(BankFinancialsDic(eKey)) = True Then
-                        If str_rnd = "K" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
-                        ElseIf str_rnd = "M" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
-                        ElseIf str_rnd = "B" Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
-                        Else
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
-                        End If
-                    
+                    If newValue <> "" Then
                         IntrinioBankFinancials = CDbl(newValue)
                     Else
-                        IntrinioBankFinancials = BankFinancialsDic(eKey)
+                        IntrinioBankFinancials = ""
                     End If
                 Else
-                    IntrinioBankFinancials = ""
+                    IntrinioBankFinancials = BankFinancialsDic(eKey)
                 End If
             Else
                 IntrinioBankFinancials = ""
@@ -2956,8 +2920,12 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 Else
                     newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
                 End If
-            
-                IntrinioBankFinancials = CDbl(newValue)
+                
+                If newValue <> "" Then
+                    IntrinioBankFinancials = CDbl(newValue)
+                Else
+                    IntrinioBankFinancials = ""
+                End If
             Else
                 IntrinioBankFinancials = BankFinancialsDic(eKey)
             End If
@@ -3312,8 +3280,11 @@ Public Sub IntrinioUpdate()
                 & vbNewLine & "Would you like to install it now?", vbYesNo, "Update Intrinio Excel Add-in")
 
             If answer = vbYes Then
+                web_url = IntrinioAddinVersion("mac_download_url")
                 #If Mac Then
                     web_url = IntrinioAddinVersion("mac_download_url")
+                    web_url = VBA.Left(web_url, Len(web_url) - 4)
+                    web_url = web_url + "-64bit.zip"
                 #ElseIf Win32 Or Win64 Then
                     web_url = IntrinioAddinVersion("windows_download_url")
                 #Else
