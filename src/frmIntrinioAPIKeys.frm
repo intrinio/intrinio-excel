@@ -104,7 +104,8 @@ Private Sub UserForm_Initialize()
         txtCollabAPIKey.Value = ""
         cmdUpdate.Caption = "START"
     End If
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    #Else
         Dim oCCPClass As ClssCutCopyPaste
         
         Set oCol = New Collection
@@ -121,7 +122,8 @@ Private Sub UserForm_Initialize()
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    #Else
         If CloseMode = vbFormControlMenu Then
             Dim File_Num As Long
             Dim sOutFolder As String, sOutFile As String
@@ -174,7 +176,9 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
 End Sub
 
 Private Sub UserForm_Terminate()
-    #If Win32 Or Win64 Then
+    #If Mac Then
+    
+    #Else
         Set oCol = Nothing
     #End If
 End Sub

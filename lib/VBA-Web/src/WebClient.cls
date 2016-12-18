@@ -712,7 +712,9 @@ Private Sub web_BeforeExecute(web_Request As WebRequest)
 End Sub
 
 Private Sub web_LoadAutoProxy(web_Request As WebRequest)
-#If Win32 Or Win64 Then
+#If Mac Then
+
+#Else
     On Error GoTo web_ErrorHandling
 
     Dim web_Parts As Dictionary

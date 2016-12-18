@@ -136,7 +136,7 @@ End Sub
 Public Sub CreateFromHttp(Client As WebClient, Request As WebRequest, Http As Object)
     On Error GoTo web_ErrorHandling
 
-    Me.StatusCode = Http.Status
+    Me.StatusCode = Http.status
     Me.StatusDescription = Http.StatusText
     Me.Content = Http.ResponseText
     Me.Body = Http.ResponseBody
