@@ -1846,7 +1846,7 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 Request.AddQuerystringParam "statement", statement
                 Request.AddQuerystringParam "fiscal_year", fiscal_year
                 Request.AddQuerystringParam "fiscal_period", fiscal_period
-                Request.AddQuerystringParam "page_size", 400
+                Request.AddQuerystringParam "page_size", 100
                 Request.AddQuerystringParam "page_number", page
                 
                 Set Response = IntrinioClient.Execute(Request)
@@ -2903,6 +2903,8 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 Request.AddQuerystringParam "statement", statement
                 Request.AddQuerystringParam "fiscal_year", fiscal_year
                 Request.AddQuerystringParam "fiscal_period", fiscal_period
+                Request.AddQuerystringParam "page_size", 100
+                Request.AddQuerystringParam "page_number", page
                 
                 Set Response = IntrinioClient.Execute(Request)
 
