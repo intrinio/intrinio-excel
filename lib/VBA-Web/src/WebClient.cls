@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 ''
-' WebClient v4.1.1
+' WebClient v4.1.2
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-Web
 '
 ' `WebClient` executes requests and handles response and is responsible for functionality shared between requests,
@@ -712,9 +712,7 @@ Private Sub web_BeforeExecute(web_Request As WebRequest)
 End Sub
 
 Private Sub web_LoadAutoProxy(web_Request As WebRequest)
-#If Mac Then
-
-#Else
+#If Win32 Or Win64 Then
     On Error GoTo web_ErrorHandling
 
     Dim web_Parts As Dictionary

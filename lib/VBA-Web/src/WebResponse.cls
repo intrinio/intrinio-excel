@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 ''
-' WebResponse v4.1.1
+' WebResponse v4.1.2
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-Web
 '
 ' Wrapper for http/cURL responses that includes parsed Data based on WebRequest.ResponseFormat.
@@ -136,7 +136,7 @@ End Sub
 Public Sub CreateFromHttp(Client As WebClient, Request As WebRequest, Http As Object)
     On Error GoTo web_ErrorHandling
 
-    Me.StatusCode = Http.status
+    Me.StatusCode = Http.Status
     Me.StatusDescription = Http.StatusText
     Me.Content = Http.ResponseText
     Me.Body = Http.ResponseBody
