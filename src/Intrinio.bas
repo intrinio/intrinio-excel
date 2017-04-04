@@ -1768,6 +1768,7 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim fundamental_sequence As Integer
     Dim fundamental_type As String
     Dim newValue As String
+    Dim Rounder As Double
 
     On Error GoTo ErrorHandler
     
@@ -1922,17 +1923,18 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 If StandardizedFinancialsDic(Key) Is Not Empty Then
                     
                     If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
-                        If rounding = CStr("K") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.000000")
-                        ElseIf rounding = CStr("M") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.000000")
-                        ElseIf rounding = CStr("B") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.000000")
+                        Value = StandardizedFinancialsDic(eKey)
+                        If rounding = "K" Then
+                            Rounder = 1000
+                        ElseIf rounding = "M" Then
+                            Rounder = 1000000
+                        ElseIf rounding = "B" Then
+                            Rounder = 1000000000
                         Else
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.000000")
+                            Rounder = 1
                         End If
-                        Value = CDbl(newValue)
-                        IntrinioStandardizedFinancials = Value
+                    
+                        IntrinioStandardizedFinancials = Value / Rounder
                     Else
                         IntrinioStandardizedFinancials = StandardizedFinancialsDic(eKey)
                     End If
@@ -1946,18 +1948,18 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
             
             If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
-
-                If rounding = CStr("K") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.000000")
-                ElseIf rounding = CStr("M") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.000000")
-                ElseIf rounding = CStr("B") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.000000")
+                Value = StandardizedFinancialsDic(eKey)
+                If rounding = "K" Then
+                    Rounder = 1000
+                ElseIf rounding = "M" Then
+                    Rounder = 1000000
+                ElseIf rounding = "B" Then
+                    Rounder = 1000000000
                 Else
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.000000")
+                    Rounder = 1
                 End If
-                Value = CDbl(newValue)
-                IntrinioStandardizedFinancials = Value
+            
+                IntrinioStandardizedFinancials = Value / Rounder
             Else
                 IntrinioStandardizedFinancials = StandardizedFinancialsDic(eKey)
             End If
@@ -2852,6 +2854,7 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim rTag As String
     Dim sValue As String
     Dim Value As Double
+    Dim Rounder As Double
     Dim api_ticker As String
     Dim coFailure As Boolean
     Dim fundamental_sequence As Integer
@@ -3010,17 +3013,18 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 If BankFinancialsDic(Key) Is Not Empty Then
                     
                     If IsNumeric(BankFinancialsDic(eKey)) = True Then
-                        If rounding = CStr("K") Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
-                        ElseIf rounding = CStr("M") Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
-                        ElseIf rounding = CStr("B") Then
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
+                        Value = BankFinancialsDic(eKey)
+                        If rounding = "K" Then
+                            Rounder = 1000
+                        ElseIf rounding = "M" Then
+                            Rounder = 1000000
+                        ElseIf rounding = "B" Then
+                            Rounder = 1000000000
                         Else
-                            newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
+                            Rounder = 1
                         End If
-                        Value = CDbl(newValue)
-                        IntrinioBankFinancials = Value
+                    
+                        IntrinioBankFinancials = Value / Rounder
                     Else
                         IntrinioBankFinancials = BankFinancialsDic(eKey)
                     End If
@@ -3034,18 +3038,18 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
             
             If IsNumeric(BankFinancialsDic(eKey)) = True Then
-
-                If rounding = CStr("K") Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
-                ElseIf rounding = CStr("M") Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
-                ElseIf rounding = CStr("B") Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
+                Value = BankFinancialsDic(eKey)
+                If rounding = "K" Then
+                    Rounder = 1000
+                ElseIf rounding = "M" Then
+                    Rounder = 1000000
+                ElseIf rounding = "B" Then
+                    Rounder = 1000000000
                 Else
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
+                    Rounder = 1
                 End If
-                Value = CDbl(newValue)
-                IntrinioBankFinancials = Value
+            
+                IntrinioBankFinancials = Value / Rounder
             Else
                 IntrinioBankFinancials = BankFinancialsDic(eKey)
             End If
