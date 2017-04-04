@@ -29,7 +29,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://api.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.7.1"
+Public Const Intrinio_Addin_Version = "2.8.0"
 
 Public Sub IntrinioInitialize()
 
@@ -216,7 +216,7 @@ Private Function IntrinioCompanies(ticker As String, Item As String)
                         IntrinioCompanies = CompanyDic(ticker)(Item)
                     End If
                 End If
-            
+
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
                 IntrinioCompanies = "429"
@@ -436,7 +436,7 @@ Sub DescribeIntrinioDataPoint()
        Description:=FuncDesc, _
        Category:=Category, _
        ArgumentDescriptions:=ArgDesc
-       
+
     FuncName = "IDP"
     Application.MacroOptions Macro:=FuncName, _
        Description:=FuncDesc, _
@@ -873,8 +873,15 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim str_start_date As String
     Dim str_end_date As String
     Dim str_frequency As String
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     index_pos = InStr(ticker, "$")
     ticker = VBA.UCase(ticker)
@@ -908,7 +915,7 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And Item <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = ticker & "_" & start_date & "_" & end_date & "_" & frequency
+        Key = ticker & "_" & start_date & "_" & end_date & "_" & frequency & "_" & page_number
         If HistoricalPricesDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
             IntrinioClient.BaseUrl = BaseUrl
@@ -931,6 +938,9 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.Method = HttpGet
             Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
+            
             If start_date <> "" Then
                 Request.AddQuerystringParam "start_date", start_date
             End If
@@ -946,7 +956,7 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             
             If Response.StatusCode = Ok Then
                 HistoricalPricesDic.Add Key, Response.Data("data")
-                IntrinioPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
+                IntrinioPrices = HistoricalPricesDic(Key)(internal_sequence + 1)(Item)
                 If IntrinioPrices = Empty Then
                     IntrinioPrices = ""
                 End If
@@ -964,7 +974,7 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioPrices = ""
             End If
         ElseIf HistoricalPricesDic.Exists(Key) = True Then
-            IntrinioPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
+            IntrinioPrices = HistoricalPricesDic(Key)(internal_sequence + 1)(Item)
             If IntrinioPrices = Empty Then
                 IntrinioPrices = ""
             End If
@@ -982,9 +992,9 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
         ElseIf Item = "" Then
             IntrinioPrices = ""
         ElseIf APICallsAtLimit = True Then
-            Key = ticker & "_" & start_date & "_" & end_date & "_" & frequency
+            Key = ticker & "_" & start_date & "_" & end_date & "_" & frequency & "_" & page_number
             If HistoricalPricesDic.Exists(Key) = True Then
-                IntrinioPrices = HistoricalPricesDic(Key)(sequence + 1)(Item)
+                IntrinioPrices = HistoricalPricesDic(Key)(internal_sequence + 1)(Item)
                 If IntrinioPrices = Empty Then
                     IntrinioPrices = ""
                 End If
@@ -1061,9 +1071,16 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim api_ticker As String
     Dim coFailure As Boolean
     Dim index_pos As Integer
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
     
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
+
     index_pos = InStr(ticker, "$")
     ticker = VBA.UCase(ticker)
     
@@ -1096,7 +1113,7 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And Item <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = ticker & "_" & Item & "_" & start_date & "_" & end_date & "_" & frequency & "_" & data_type
+        Key = ticker & "_" & Item & "_" & start_date & "_" & end_date & "_" & frequency & "_" & data_type & "_" & page_number
         If HistoricalDataDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
             IntrinioClient.BaseUrl = BaseUrl
@@ -1120,6 +1137,9 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "item", Item
+            Request.AddQuerystringParam "page_number", page_number
+            Request.AddQuerystringParam "page_size", page_size
+            
             If start_date <> "" Then
                 Request.AddQuerystringParam "start_date", start_date
             End If
@@ -1139,10 +1159,10 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
             If Response.StatusCode = Ok Then
                 HistoricalDataDic.Add Key, Response.Data("data")
                 If show_date = True Then
-                    IHD = HistoricalDataDic(Key)(sequence + 1)("date")
+                    IHD = HistoricalDataDic(Key)(internal_sequence + 1)("date")
                     IHD = VBA.DateValue(IHD)
                 ElseIf show_date = False Then
-                    IHD = HistoricalDataDic(Key)(sequence + 1)("value")
+                    IHD = HistoricalDataDic(Key)(internal_sequence + 1)("value")
                     IHD = VBA.Round(IHD * 1, 4)
                 End If
                 If IHD = Empty Then
@@ -1158,10 +1178,10 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
             End If
         ElseIf HistoricalDataDic.Exists(Key) = True Then
             If show_date = True Then
-                IHD = HistoricalDataDic(Key)(sequence + 1)("date")
+                IHD = HistoricalDataDic(Key)(internal_sequence + 1)("date")
                 IHD = VBA.DateValue(IHD)
             ElseIf show_date = False Then
-                IHD = HistoricalDataDic(Key)(sequence + 1)("value")
+                IHD = HistoricalDataDic(Key)(internal_sequence + 1)("value")
                 IHD = VBA.Round(IHD * 1, 4)
             End If
             If IHD = Empty Then
@@ -1175,13 +1195,13 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
         ElseIf Item = "" Then
             IHD = ""
         ElseIf APICallsAtLimit = True Then
-            Key = ticker & "_" & Item & "_" & start_date & "_" & end_date & "_" & frequency & "_" & data_type
+            Key = ticker & "_" & Item & "_" & start_date & "_" & end_date & "_" & frequency & "_" & data_type & "_" & page_number
             If HistoricalDataDic.Exists(Key) = True Then
                 If show_date = True Then
-                    IHD = HistoricalDataDic(Key)(sequence + 1)("date")
+                    IHD = HistoricalDataDic(Key)(internal_sequence + 1)("date")
                     IHD = VBA.DateValue(IHD)
                 ElseIf show_date = False Then
-                    IHD = HistoricalDataDic(Key)(sequence + 1)("value")
+                    IHD = HistoricalDataDic(Key)(internal_sequence + 1)("value")
                     IHD = VBA.Round(IHD * 1, 4)
                 End If
                 If IHD = Empty Then
@@ -1229,8 +1249,15 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim api_ticker As String
     Dim coFailure As Boolean
     Dim index_pos As Integer
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     index_pos = InStr(ticker, "$")
     ticker = VBA.UCase(ticker)
@@ -1264,7 +1291,7 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And Item <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = ticker
+        Key = ticker & "_" & page_number
         If NewsDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
             IntrinioClient.BaseUrl = BaseUrl
@@ -1287,13 +1314,15 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.Method = HttpGet
             Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             
             If Response.StatusCode = Ok Then
                 NewsDic.Add Key, Response.Data("data")
-                IntrinioNews = NewsDic(Key)(sequence + 1)(Item)
+                IntrinioNews = NewsDic(Key)(internal_sequence + 1)(Item)
                 If IntrinioNews = Empty Then
                     IntrinioNews = ""
                 End If
@@ -1306,7 +1335,7 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioNews = ""
             End If
         ElseIf NewsDic.Exists(Key) = True Then
-            IntrinioNews = NewsDic(Key)(sequence + 1)(Item)
+            IntrinioNews = NewsDic(Key)(internal_sequence + 1)(Item)
             If IntrinioNews = Empty Then
                 IntrinioNews = ""
             End If
@@ -1318,9 +1347,9 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
         ElseIf Item = "" Then
             IntrinioNews = ""
         ElseIf APICallsAtLimit = True Then
-            Key = ticker
+            Key = ticker & "_" & page_number
             If NewsDic.Exists(Key) = True Then
-                IntrinioNews = NewsDic(Key)(sequence + 1)(Item)
+                IntrinioNews = NewsDic(Key)(internal_sequence + 1)(Item)
                 If IntrinioNews = Empty Then
                     IntrinioNews = ""
                 End If
@@ -1394,8 +1423,15 @@ Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     ticker = VBA.UCase(ticker)
     
@@ -1425,7 +1461,7 @@ Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And statement <> "" And period_type <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = ticker & "_" & statement & "_" & period_type
+        Key = ticker & "_" & statement & "_" & period_type & "_" & page_number
         
         If FundamentalsDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
@@ -1451,12 +1487,14 @@ Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             If Response.StatusCode = Ok Then
                 FundamentalsDic.Add Key, Response.Data("data")
-                IntrinioStandardizedFundamentals = FundamentalsDic(Key)(sequence + 1)(Item)
+                IntrinioStandardizedFundamentals = FundamentalsDic(Key)(internal_sequence + 1)(Item)
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
                 IntrinioStandardizedFundamentals = "Plan Limit Reached"
@@ -1466,13 +1504,13 @@ Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioStandardizedFundamentals = ""
             End If
         ElseIf FundamentalsDic.Exists(Key) = True Then
-            IntrinioStandardizedFundamentals = FundamentalsDic(Key)(sequence + 1)(Item)
+            IntrinioStandardizedFundamentals = FundamentalsDic(Key)(internal_sequence + 1)(Item)
         End If
     Else
         If APICallsAtLimit = True Then
-            Key = ticker & "_" & statement & "_" & period_type
+            Key = ticker & "_" & statement & "_" & period_type & "_" & page_number
             If FundamentalsDic.Exists(Key) = True Then
-                IntrinioStandardizedFundamentals = FundamentalsDic(Key)(sequence + 1)(Item)
+                IntrinioStandardizedFundamentals = FundamentalsDic(Key)(internal_sequence + 1)(Item)
             Else
                 IntrinioStandardizedFundamentals = "Plan Limit Reached"
             End If
@@ -1549,8 +1587,15 @@ Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     ticker = VBA.UCase(ticker)
     
@@ -1580,7 +1625,7 @@ Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And statement <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = ticker & "_" & statement
+        Key = ticker & "_" & statement & "_" & page_number
         
         If StandardizedTagsDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
@@ -1605,12 +1650,14 @@ Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.Format = Json
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             If Response.StatusCode = Ok Then
                 StandardizedTagsDic.Add Key, Response.Data("data")
-                IntrinioStandardizedTags = StandardizedTagsDic(Key)(sequence + 1)(Item)
+                IntrinioStandardizedTags = StandardizedTagsDic(Key)(internal_sequence + 1)(Item)
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
                 IntrinioStandardizedTags = "Plan Limit Reached"
@@ -1620,14 +1667,14 @@ Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioStandardizedTags = ""
             End If
         ElseIf StandardizedTagsDic.Exists(Key) = True Then
-            IntrinioStandardizedTags = StandardizedTagsDic(Key)(sequence + 1)(Item)
+            IntrinioStandardizedTags = StandardizedTagsDic(Key)(internal_sequence + 1)(Item)
         End If
     Else
         If APICallsAtLimit = True Then
-            Key = ticker & "_" & statement
+            Key = ticker & "_" & statement & "_" & page_number
             
             If StandardizedTagsDic.Exists(Key) = True Then
-            IntrinioStandardizedTags = StandardizedTagsDic(Key)(sequence + 1)(Item)
+                IntrinioStandardizedTags = StandardizedTagsDic(Key)(internal_sequence + 1)(Item)
             Else
                 IntrinioStandardizedTags = "Plan Limit Reached"
             End If
@@ -1721,6 +1768,7 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim fundamental_sequence As Integer
     Dim fundamental_type As String
     Dim newValue As String
+    Dim Rounder As Double
 
     On Error GoTo ErrorHandler
     
@@ -1783,23 +1831,28 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 Password:=inPassword
             Set IntrinioClient.Authenticator = Auth
             
-            Dim Request As New WebRequest
+            
             Dim last_page As Integer
             Dim is_last_page As Boolean
             Dim page As Integer
             Dim Response As WebResponse
+            Dim BaseRequest As New WebRequest
+            
             
             page = 1
             
+            BaseRequest.Resource = "financials/standardized"
+            BaseRequest.Method = HttpGet
+            BaseRequest.Format = Json
+            BaseRequest.AddQuerystringParam "ticker", ticker
+            BaseRequest.AddQuerystringParam "statement", statement
+            BaseRequest.AddQuerystringParam "fiscal_year", fiscal_year
+            BaseRequest.AddQuerystringParam "fiscal_period", fiscal_period
+            BaseRequest.AddQuerystringParam "page_size", 100
+
             Do Until is_last_page = True
-                Request.Resource = "financials/standardized"
-                Request.Method = HttpGet
-                Request.Format = Json
-                Request.AddQuerystringParam "ticker", ticker
-                Request.AddQuerystringParam "statement", statement
-                Request.AddQuerystringParam "fiscal_year", fiscal_year
-                Request.AddQuerystringParam "fiscal_period", fiscal_period
-                Request.AddQuerystringParam "page_size", 400
+                Dim Request As WebRequest
+                Set Request = BaseRequest.Clone()
                 Request.AddQuerystringParam "page_number", page
                 
                 Set Response = IntrinioClient.Execute(Request)
@@ -1813,6 +1866,7 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                             Else
                                 is_last_page = False
                                 page = page + 1
+                                Set Request.QuerystringParams("page_number") = page
                             End If
                             
                             If StandardizedFinancialsDic.Exists(Key) = False Then
@@ -1869,17 +1923,18 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 If StandardizedFinancialsDic(Key) Is Not Empty Then
                     
                     If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
-                        If rounding = CStr("K") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.000000")
-                        ElseIf rounding = CStr("M") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.000000")
-                        ElseIf rounding = CStr("B") Then
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.000000")
+                        Value = StandardizedFinancialsDic(eKey)
+                        If rounding = "K" Then
+                            Rounder = 1000
+                        ElseIf rounding = "M" Then
+                            Rounder = 1000000
+                        ElseIf rounding = "B" Then
+                            Rounder = 1000000000
                         Else
-                            newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.000000")
+                            Rounder = 1
                         End If
-                        Value = CDbl(newValue)
-                        IntrinioStandardizedFinancials = Value
+                    
+                        IntrinioStandardizedFinancials = Value / Rounder
                     Else
                         IntrinioStandardizedFinancials = StandardizedFinancialsDic(eKey)
                     End If
@@ -1893,18 +1948,18 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
             
             If IsNumeric(StandardizedFinancialsDic(eKey)) = True Then
-
-                If rounding = CStr("K") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,.000000")
-                ElseIf rounding = CStr("M") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,.000000")
-                ElseIf rounding = CStr("B") Then
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0,,,.000000")
+                Value = StandardizedFinancialsDic(eKey)
+                If rounding = "K" Then
+                    Rounder = 1000
+                ElseIf rounding = "M" Then
+                    Rounder = 1000000
+                ElseIf rounding = "B" Then
+                    Rounder = 1000000000
                 Else
-                    newValue = VBA.Format(StandardizedFinancialsDic(eKey), "0.000000")
+                    Rounder = 1
                 End If
-                Value = CDbl(newValue)
-                IntrinioStandardizedFinancials = Value
+            
+                IntrinioStandardizedFinancials = Value / Rounder
             Else
                 IntrinioStandardizedFinancials = StandardizedFinancialsDic(eKey)
             End If
@@ -1975,8 +2030,15 @@ Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     ticker = VBA.UCase(ticker)
     
@@ -2006,7 +2068,7 @@ Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And statement <> "" And period_type <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = ticker & "_" & statement & "_" & period_type
+        Key = ticker & "_" & statement & "_" & period_type & "_" & page_number
         
         If ReportedFundamentalsDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
@@ -2032,12 +2094,14 @@ Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.AddQuerystringParam "ticker", ticker
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             If Response.StatusCode = Ok Then
                 ReportedFundamentalsDic.Add Key, Response.Data("data")
-                IntrinioReportedFundamentals = ReportedFundamentalsDic(Key)(sequence + 1)(Item)
+                IntrinioReportedFundamentals = ReportedFundamentalsDic(Key)(internal_sequence + 1)(Item)
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
                 IntrinioReportedFundamentals = "Plan Limit Reached"
@@ -2047,13 +2111,13 @@ Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioReportedFundamentals = ""
             End If
         ElseIf ReportedFundamentalsDic.Exists(Key) = True Then
-            IntrinioReportedFundamentals = ReportedFundamentalsDic(Key)(sequence + 1)(Item)
+            IntrinioReportedFundamentals = ReportedFundamentalsDic(Key)(internal_sequence + 1)(Item)
         End If
     Else
         If APICallsAtLimit = True Then
-            Key = ticker & "_" & statement & "_" & period_type
+            Key = ticker & "_" & statement & "_" & period_type & "_" & page_number
             If ReportedFundamentalsDic.Exists(Key) = True Then
-                IntrinioReportedFundamentals = ReportedFundamentalsDic(Key)(sequence + 1)(Item)
+                IntrinioReportedFundamentals = ReportedFundamentalsDic(Key)(internal_sequence + 1)(Item)
             Else
                 IntrinioReportedFundamentals = "Plan Limit Reached"
             End If
@@ -2109,8 +2173,15 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim fundamental_type As String
     Dim last_page As Integer
     Dim str_item As String
-
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
+    
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     str_item = Item
     
@@ -2151,7 +2222,7 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And statement <> "" And fiscal_year <> 0 And fiscal_period <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period
+        Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & page_number
         
         If ReportedTagsDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
@@ -2178,6 +2249,8 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "fiscal_year", fiscal_year
             Request.AddQuerystringParam "fiscal_period", fiscal_period
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
@@ -2187,13 +2260,13 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
                 If last_page > 0 Then
                     ReportedTagsDic.Add Key, Response.Data("data")
                     If str_item = "domain_tag" Then
-                        If IsNull(ReportedTagsDic(Key)(sequence + 1)(str_item)) Then
+                        If IsNull(ReportedTagsDic(Key)(internal_sequence + 1)(str_item)) Then
                             IntrinioReportedTags = ""
                         Else
-                            IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                            IntrinioReportedTags = ReportedTagsDic(Key)(internal_sequence + 1)(str_item)
                         End If
                     Else
-                        IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                        IntrinioReportedTags = ReportedTagsDic(Key)(internal_sequence + 1)(str_item)
                     End If
                 Else
                     IntrinioReportedTags = ""
@@ -2209,27 +2282,27 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             End If
         ElseIf ReportedTagsDic.Exists(Key) = True Then
             If str_item = "domain_tag" Then
-                If IsNull(ReportedTagsDic(Key)(sequence + 1)(str_item)) Then
+                If IsNull(ReportedTagsDic(Key)(internal_sequence + 1)(str_item)) Then
                     IntrinioReportedTags = ""
                 Else
-                    IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                    IntrinioReportedTags = ReportedTagsDic(Key)(internal_sequence + 1)(str_item)
                 End If
             Else
-                IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                IntrinioReportedTags = ReportedTagsDic(Key)(internal_sequence + 1)(str_item)
             End If
         End If
     Else
         If APICallsAtLimit = True Then
-            Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period
+            Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & page_number
             If ReportedTagsDic.Exists(Key) = True Then
                 If str_item = "domain_tag" Then
-                    If IsNull(ReportedTagsDic(Key)(sequence + 1)(str_item)) Then
+                    If IsNull(ReportedTagsDic(Key)(internal_sequence + 1)(str_item)) Then
                         IntrinioReportedTags = ""
                     Else
-                        IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                        IntrinioReportedTags = ReportedTagsDic(Key)(internal_sequence + 1)(str_item)
                     End If
                 Else
-                    IntrinioReportedTags = ReportedTagsDic(Key)(sequence + 1)(str_item)
+                    IntrinioReportedTags = ReportedTagsDic(Key)(internal_sequence + 1)(str_item)
                 End If
             Else
                 IntrinioReportedTags = "Plan Limit Reached"
@@ -2271,6 +2344,7 @@ Sub DescribeIntrinioReportedFinancials()
        ArgumentDescriptions:=ArgDesc
 End Sub
 
+
 Public Function IntrinioReportedFinancials(ticker As String, _
                            statement As String, _
                            fiscal_year As Integer, _
@@ -2292,13 +2366,11 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim fundamental_type As String
     Dim last_page As Integer
     Dim str_domain_tag As String
-    
-    str_domain_tag = domain_tag
-    
+
     On Error GoTo ErrorHandler
     
     ticker = VBA.UCase(ticker)
-
+    
     If ticker <> "" And LoginFailure = False Then
         If CompanySuccessDic.Exists(ticker) = False Then
             api_ticker = IntrinioCompanies(ticker, "ticker")
@@ -2324,6 +2396,7 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
         End If
     End If
     
+    
     If ticker <> "" And statement <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
         If fiscal_year < 1900 Then
             fundamental_type = fiscal_period
@@ -2334,7 +2407,7 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If ticker <> "" And statement <> "" And fiscal_year <> 0 And fiscal_period <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        
+
         Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period
         
         If ReportedFinancialsDic.Exists(Key) = False Then
@@ -2354,58 +2427,93 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 Password:=inPassword
             Set IntrinioClient.Authenticator = Auth
             
-            Dim Request As New WebRequest
-            Request.Resource = "financials/reported"
-            Request.Method = HttpGet
-            Request.Format = Json
-            Request.AddQuerystringParam "ticker", ticker
-            Request.AddQuerystringParam "statement", statement
-            Request.AddQuerystringParam "fiscal_year", fiscal_year
-            Request.AddQuerystringParam "fiscal_period", fiscal_period
+            Dim BaseRequest As New WebRequest
+            Dim is_last_page As Boolean
+            Dim page As Integer
+            
+            page = 1
+            
+            BaseRequest.Resource = "financials/reported"
+            BaseRequest.Method = HttpGet
+            BaseRequest.Format = Json
+            BaseRequest.AddQuerystringParam "ticker", ticker
+            BaseRequest.AddQuerystringParam "statement", statement
+            BaseRequest.AddQuerystringParam "fiscal_year", fiscal_year
+            BaseRequest.AddQuerystringParam "fiscal_period", fiscal_period
+            BaseRequest.AddQuerystringParam "page_size", 100
             
             Dim Response As WebResponse
-            Set Response = IntrinioClient.Execute(Request)
             
-            If Response.StatusCode = Ok Then
-                last_page = Response.Data("total_pages")
-                If last_page > 0 Then
-                    ReportedFinancialsDic.Add Key, Response.Data("data")
-                    For Each X In ReportedFinancialsDic(Key)
-                        rXBRLTag = X("xbrl_tag")
-                        If X("domain_tag") <> "null" Then
-                            rDomainTag = X("domain_tag")
-                            nKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & rXBRLTag & "_" & rDomainTag
+            Do Until is_last_page = True
+ 
+                Dim Request As WebRequest
+                Set Request = BaseRequest.Clone()
+                Request.AddQuerystringParam "page_number", page
+                
+                Set Response = IntrinioClient.Execute(Request)
+
+                If Response.StatusCode = Ok Then
+                    If Response.Content <> "" Then
+                        last_page = Response.Data("total_pages")
+                        If last_page > 0 Then
+                            If last_page = page Then
+                                is_last_page = True
+                            Else
+                                is_last_page = False
+                                page = page + 1
+                            End If
+                            
+                            If ReportedFinancialsDic.Exists(Key) = False Then
+                                ReportedFinancialsDic.Add Key, Response.Data("data")
+                            ElseIf ReportedFinancialsDic.Exists(Key) = True Then
+                                ReportedFinancialsDic.Remove (Key)
+                                ReportedFinancialsDic.Add Key, Response.Data("data")
+                            End If
+                            
+                            For Each X In ReportedFinancialsDic(Key)
+                                rXBRLTag = X("xbrl_tag")
+                                If X("domain_tag") <> "null" Then
+                                    rDomainTag = X("domain_tag")
+                                    nKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & rXBRLTag & "_" & rDomainTag
+                                Else
+                                    nKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & rXBRLTag
+                                End If
+                                rValue = X("value")
+                                ReportedFinancialsDic.Add nKey, rValue
+                            Next
                         Else
-                            nKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & rXBRLTag
+                            is_last_page = True
+                            If ReportedFinancialsDic.Exists(Key) = False Then
+                                ReportedFinancialsDic.Add Key, Response.Data("data")
+                            ElseIf ReportedFinancialsDic.Exists(Key) = True Then
+                                ReportedFinancialsDic.Remove (Key)
+                                ReportedFinancialsDic.Add Key, Response.Data("data")
+                            End If
                         End If
-                        rValue = X("value")
-                        ReportedFinancialsDic.Add nKey, rValue
-                    Next
-                    eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & str_domain_tag
-                    If VBA.Right(xbrl_tag, 8) = "Abstract" Then
-                        IntrinioReportedFinancials = ""
-                    ElseIf xbrl_tag = "" Then
-                        IntrinioReportedFinancials = ""
                     Else
-                        IntrinioReportedFinancials = ReportedFinancialsDic(eKey)
+                        is_last_page = True
+                        If ReportedFinancialsDic.Exists(Key) = False Then
+                            ReportedFinancialsDic.Add Key, Empty
+                        ElseIf ReportedFinancialsDic.Exists(Key) = True Then
+                            ReportedFinancialsDic.Remove (Key)
+                            ReportedFinancialsDic.Add Key, Empty
+                        End If
                     End If
                 Else
-                    ReportedFinancialsDic.Add Key, Response.Data("data")
+                    is_last_page = True
+                    If Response.StatusCode = 429 Then
+                        APICallsAtLimit = True
+                        IntrinioReportedFinancials = "Plan Limit Reached"
+                    ElseIf Response.StatusCode = 403 Then
+                        IntrinioReportedFinancials = "Visit Intrinio.com to Subscribe"
+                    Else
+                        IntrinioReportedFinancials = ""
+                    End If
                 End If
-            ElseIf Response.StatusCode = 429 Then
-                APICallsAtLimit = True
-                IntrinioReportedFinancials = "Plan Limit Reached"
-            ElseIf Response.StatusCode = 403 Then
-                IntrinioReportedFinancials = "Visit Intrinio.com to Subscribe"
-            Else
-                IntrinioReportedFinancials = ""
-            End If
-        ElseIf ReportedFinancialsDic.Exists(Key) = True Then
-            If str_domain_tag = "" Then
-                eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag
-            Else
-                eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & "_" & str_domain_tag
-            End If
+            Loop
+                            
+            eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & str_domain_tag
+            
             If VBA.Right(xbrl_tag, 8) = "Abstract" Then
                 IntrinioReportedFinancials = ""
             ElseIf xbrl_tag = "" Then
@@ -2413,28 +2521,23 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Else
                 IntrinioReportedFinancials = ReportedFinancialsDic(eKey)
             End If
+        ElseIf ReportedFinancialsDic.Exists(Key) = True Then
+            eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & str_domain_tag
+            
+            If VBA.Right(xbrl_tag, 8) = "Abstract" Then
+                IntrinioReportedFinancials = ""
+            ElseIf xbrl_tag = "" Then
+                IntrinioReportedFinancials = ""
+            Else
+                IntrinioReportedFinancials = ReportedFinancialsDic(eKey)
+            End If
+
         End If
     Else
-        If LoginFailure = True Then
-            Key = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period
-            If ReportedFinancialsDic.Exists(Key) = True Then
-                If str_domain_tag = "" Then
-                    eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag
-                Else
-                    eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & "_" & str_domain_tag
-                End If
-                If VBA.Right(xbrl_tag, 8) = "Abstract" Then
-                    IntrinioReportedFinancials = ""
-                ElseIf xbrl_tag = "" Then
-                    IntrinioReportedFinancials = ""
-                Else
-                    IntrinioReportedFinancials = ReportedFinancialsDic(eKey)
-                End If
-            Else
-                IntrinioReportedFinancials = "Invalid API Keys"
-            End If
-        ElseIf APICallsAtLimit = True Then
+        If APICallsAtLimit = True Then
             IntrinioReportedFinancials = "Plan Limit Reached"
+        ElseIf LoginFailure = True Then
+            IntrinioReportedFinancials = "Invalid API Keys"
         ElseIf coFailure = True Then
             IntrinioReportedFinancials = "Invalid Ticker Symbol"
         Else
@@ -2447,6 +2550,7 @@ ErrorHandler:
     IntrinioReportedFinancials = ""
     Resume Next
 End Function
+
 
 Sub DescribeIntrinioBankFundamentals()
     Dim FuncName As String
@@ -2480,8 +2584,15 @@ Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_identifier As String
     Dim coFailure As Boolean
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     If identifier <> "" And LoginFailure = False Then
         If CompanySuccessDic.Exists(identifier) = False Then
@@ -2503,7 +2614,7 @@ Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If identifier <> "" And statement <> "" And period_type <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = identifier & "_" & statement & "_" & period_type
+        Key = identifier & "_" & statement & "_" & period_type & "_" & page_number
         
         If BankFundamentalsDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
@@ -2529,13 +2640,15 @@ Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.AddQuerystringParam "identifier", identifier
             Request.AddQuerystringParam "statement", statement
             Request.AddQuerystringParam "type", period_type
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
             
             If Response.StatusCode = Ok Then
                 BankFundamentalsDic.Add Key, Response.Data("data")
-                IntrinioBankFundamentals = BankFundamentalsDic(Key)(sequence + 1)(Item)
+                IntrinioBankFundamentals = BankFundamentalsDic(Key)(internal_sequence + 1)(Item)
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
                 IntrinioBankFundamentals = "Plan Limit Reached"
@@ -2545,13 +2658,13 @@ Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioBankFundamentals = ""
             End If
         ElseIf BankFundamentalsDic.Exists(Key) = True Then
-            IntrinioBankFundamentals = BankFundamentalsDic(Key)(sequence + 1)(Item)
+            IntrinioBankFundamentals = BankFundamentalsDic(Key)(internal_sequence + 1)(Item)
         End If
     Else
         If APICallsAtLimit = True Then
-            Key = identifier & "_" & statement & "_" & period_type
+            Key = identifier & "_" & statement & "_" & period_type & "_" & page_number
             If BankFundamentalsDic.Exists(Key) = True Then
-                IntrinioBankFundamentals = BankFundamentalsDic(Key)(sequence + 1)(Item)
+                IntrinioBankFundamentals = BankFundamentalsDic(Key)(internal_sequence + 1)(Item)
             Else
                 IntrinioBankFundamentals = "Plan Limit Reached"
             End If
@@ -2600,8 +2713,15 @@ Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_identifier As String
     Dim coFailure As Boolean
+    Dim page_number As Integer
+    Dim page_size As Integer
+    Dim internal_sequence As Integer
     
     On Error GoTo ErrorHandler
+    
+    page_size = 100
+    page_number = Ceiling((sequence + 1) / page_size)
+    internal_sequence = sequence - ((page_number - 1) * page_size)
     
     identifier = VBA.UCase(identifier)
     
@@ -2625,7 +2745,7 @@ Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
     End If
     
     If identifier <> "" And statement <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
-        Key = identifier & "_" & statement
+        Key = identifier & "_" & statement & "_" & page_number
         
         If BankTagsDic.Exists(Key) = False Then
             Dim IntrinioClient As New WebClient
@@ -2650,13 +2770,15 @@ Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Request.Format = Json
             Request.AddQuerystringParam "identifier", identifier
             Request.AddQuerystringParam "statement", statement
+            Request.AddQuerystringParam "page_size", page_size
+            Request.AddQuerystringParam "page_number", page_number
             
             Dim Response As WebResponse
             Set Response = IntrinioClient.Execute(Request)
 
             If Response.StatusCode = Ok Then
                 BankTagsDic.Add Key, Response.Data("data")
-                IntrinioBankTags = BankTagsDic(Key)(sequence + 1)(Item)
+                IntrinioBankTags = BankTagsDic(Key)(internal_sequence + 1)(Item)
             ElseIf Response.StatusCode = 429 Then
                 APICallsAtLimit = True
                 IntrinioBankTags = "Plan Limit Reached"
@@ -2666,14 +2788,14 @@ Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioBankTags = ""
             End If
         ElseIf BankTagsDic.Exists(Key) = True Then
-            IntrinioBankTags = BankTagsDic(Key)(sequence + 1)(Item)
+            IntrinioBankTags = BankTagsDic(Key)(internal_sequence + 1)(Item)
         End If
     Else
         If APICallsAtLimit = True Then
-            Key = identifier & "_" & statement
+            Key = identifier & "_" & statement & "_" & page_number
             
             If BankTagsDic.Exists(Key) = True Then
-            IntrinioBankTags = BankTagsDic(Key)(sequence + 1)(Item)
+            IntrinioBankTags = BankTagsDic(Key)(internal_sequence + 1)(Item)
             Else
                 IntrinioBankTags = "Plan Limit Reached"
             End If
@@ -2730,22 +2852,17 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim nKey As String
     Dim X As Variant
     Dim rTag As String
-    Dim rValue As Double
     Dim sValue As String
     Dim Value As Double
     Dim Rounder As Double
-    Dim api_identifier As String
+    Dim api_ticker As String
     Dim coFailure As Boolean
     Dim fundamental_sequence As Integer
     Dim fundamental_type As String
     Dim newValue As String
-    Dim str_rnd As String
-    
-    str_rnd = rounding
-    
+    Dim api_identifier As String
+
     On Error GoTo ErrorHandler
-    
-    identifier = VBA.UCase(identifier)
     
     If identifier <> "" And LoginFailure = False Then
         If CompanySuccessDic.Exists(identifier) = False Then
@@ -2804,22 +2921,29 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 Password:=inPassword
             Set IntrinioClient.Authenticator = Auth
             
-            Dim Request As New WebRequest
+            
             Dim last_page As Integer
             Dim is_last_page As Boolean
             Dim page As Integer
             Dim Response As WebResponse
+            Dim BaseRequest As New WebRequest
+            
             
             page = 1
             
+            BaseRequest.Resource = "financials/banks"
+            BaseRequest.Method = HttpGet
+            BaseRequest.Format = Json
+            BaseRequest.AddQuerystringParam "identifier", identifier
+            BaseRequest.AddQuerystringParam "statement", statement
+            BaseRequest.AddQuerystringParam "fiscal_year", fiscal_year
+            BaseRequest.AddQuerystringParam "fiscal_period", fiscal_period
+            BaseRequest.AddQuerystringParam "page_size", 100
+
             Do Until is_last_page = True
-                Request.Resource = "financials/banks"
-                Request.Method = HttpGet
-                Request.Format = Json
-                Request.AddQuerystringParam "identifier", identifier
-                Request.AddQuerystringParam "statement", statement
-                Request.AddQuerystringParam "fiscal_year", fiscal_year
-                Request.AddQuerystringParam "fiscal_period", fiscal_period
+                Dim Request As WebRequest
+                Set Request = BaseRequest.Clone()
+                Request.AddQuerystringParam "page_number", page
                 
                 Set Response = IntrinioClient.Execute(Request)
 
@@ -2832,6 +2956,7 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                             Else
                                 is_last_page = False
                                 page = page + 1
+                                Set Request.QuerystringParams("page_number") = page
                             End If
                             
                             If BankFinancialsDic.Exists(Key) = False Then
@@ -2884,25 +3009,27 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
 
             If BankFinancialsDic.Exists(Key) = True Then
-                
-                If IsNumeric(BankFinancialsDic(eKey)) = True Then
-                    If str_rnd = "K" Then
-                        newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
-                    ElseIf str_rnd = "M" Then
-                        newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
-                    ElseIf str_rnd = "B" Then
-                        newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
-                    Else
-                        newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
-                    End If
+
+                If BankFinancialsDic(Key) Is Not Empty Then
                     
-                    If newValue <> "" Then
-                        IntrinioBankFinancials = CDbl(newValue)
+                    If IsNumeric(BankFinancialsDic(eKey)) = True Then
+                        Value = BankFinancialsDic(eKey)
+                        If rounding = "K" Then
+                            Rounder = 1000
+                        ElseIf rounding = "M" Then
+                            Rounder = 1000000
+                        ElseIf rounding = "B" Then
+                            Rounder = 1000000000
+                        Else
+                            Rounder = 1
+                        End If
+                    
+                        IntrinioBankFinancials = Value / Rounder
                     Else
-                        IntrinioBankFinancials = ""
+                        IntrinioBankFinancials = BankFinancialsDic(eKey)
                     End If
                 Else
-                    IntrinioBankFinancials = BankFinancialsDic(eKey)
+                    IntrinioBankFinancials = ""
                 End If
             Else
                 IntrinioBankFinancials = ""
@@ -2911,21 +3038,18 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             eKey = identifier & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & tag
             
             If IsNumeric(BankFinancialsDic(eKey)) = True Then
-                If str_rnd = "K" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,.000000")
-                ElseIf str_rnd = "M" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,.000000")
-                ElseIf str_rnd = "B" Then
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0,,,.000000")
+                Value = BankFinancialsDic(eKey)
+                If rounding = "K" Then
+                    Rounder = 1000
+                ElseIf rounding = "M" Then
+                    Rounder = 1000000
+                ElseIf rounding = "B" Then
+                    Rounder = 1000000000
                 Else
-                    newValue = VBA.Format(BankFinancialsDic(eKey), "0.000000")
+                    Rounder = 1
                 End If
-                
-                If newValue <> "" Then
-                    IntrinioBankFinancials = CDbl(newValue)
-                Else
-                    IntrinioBankFinancials = ""
-                End If
+            
+                IntrinioBankFinancials = Value / Rounder
             Else
                 IntrinioBankFinancials = BankFinancialsDic(eKey)
             End If
@@ -2936,7 +3060,7 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
         ElseIf LoginFailure = True Then
             IntrinioBankFinancials = "Invalid API Keys"
         ElseIf coFailure = True Then
-            IntrinioBankFinancials = "Invalid Identifier"
+            IntrinioBankFinancials = "Invalid Ticker Symbol"
         Else
             IntrinioBankFinancials = ""
         End If
@@ -2947,6 +3071,7 @@ ErrorHandler:
     IntrinioBankFinancials = ""
     Resume Next
 End Function
+
 
 Private Function IntrinioAddinVersion(Item As String)
     Dim IntrinioClient As New WebClient
@@ -3252,7 +3377,7 @@ End Sub
 
 Public Sub IntrinioHelp()
     Dim Url As String
-    Url = "http://community.intrinio.com/docs/excel-add-in/"
+    Url = "http://docs.intrinio.com/excel-addin#home"
     ActiveWorkbook.FollowHyperlink Url
 End Sub
 
@@ -3402,4 +3527,10 @@ Private Function ValidAddress(strAddress As String) As Boolean
     On Error Resume Next
     Set r = Range(strAddress)
     If Not r Is Nothing Then ValidAddress = True
+End Function
+
+Public Function Ceiling(ByVal X As Double, Optional ByVal Factor As Double = 1) As Double
+    ' X is the value you want to round
+    ' is the multiple to which you want to round
+    Ceiling = (Int(X / Factor) - (X / Factor - Int(X / Factor) > 0)) * Factor
 End Function
