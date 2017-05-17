@@ -391,6 +391,27 @@ Returns the financial data directly from the xbrl filing of the company's financ
 *   **xbrl_tag** - the specified XBRL tag: **`All Available XBRL Tags`**
 *   **domain_tag** (optional) - the specified domain XBRL tag, associated with certain data points on the financial statements that have a dimension associated with the data point: **`All Available Domain XBRL Tags`**
 
+## IntrinioNews
+**`=IntrinioNews(identifier, item, sequence)`**  
+Returns news article data for the selected identifier (ticker symbol, CIK ID, FIGI, etc).
+
+### Parameters
+
+```
+=IntrinioNews("AAPL","title",0)
+
+Google challenges Apple's Siri by opening digital assistant to iPhone
+
+=IntrinioNews("AAPL","publication_date",0)
+
+2017-05-17 18:23:55 +0000
+
+```
+
+*   **identifier** - an identifier for the company, including ticker symbol the SEC CIK ID, FIGI: **<a href="/master/us-securities" target="_blank">TICKER SYMBOL</a> | <a href="http://www.sec.gov/edgar/searchedgar/cik.htm" target="_blank">CENTRAL INDEX KEY**
+*   **item** - the attribute of the news article: **`title | publication_date | summary | url`**
+*   **sequence** - an integer 0 or greater for calling a single news article from the first entry, based on sort order: **`0..last available`**
+
 ## IntrinioBankFundamentals
 
 **`=IntrinioBankFundamentals(identifier, statement, type, sequence, item)`**  
