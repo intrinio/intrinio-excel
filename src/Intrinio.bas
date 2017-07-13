@@ -454,65 +454,15 @@ Public Function IntrinioDataPoint(identifier As String, Item As String)
 Attribute IntrinioDataPoint.VB_Description = "Returns a data point for a company based on a selected tag"
 Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
-    Dim api_ticker As String
     Dim coFailure As Boolean
     Dim dValue As Double
-    Dim exchange_pos As Integer
-    Dim index_pos As Integer
     
     On Error GoTo ErrorHandler
     
-    exchange_pos = InStr(identifier, ":")
-    index_pos = InStr(identifier, "$")
     identifier = VBA.UCase(identifier)
     
     If identifier <> "" And LoginFailure = False Then
-        If CompanySuccessDic.Exists(identifier) = False Then
-            If identifier = "" Then
-                coFailure = False
-            ElseIf VBA.Left(identifier, 5) = "FRED." Then
-                CompanySuccessDic.Add identifier, False
-                coFailure = CompanySuccessDic(identifier)
-            ElseIf identifier = "DMD.ERP" Then
-                CompanySuccessDic.Add identifier, False
-                coFailure = CompanySuccessDic(identifier)
-            ElseIf exchange_pos > 0 Then
-                CompanySuccessDic.Add identifier, False
-                coFailure = CompanySuccessDic(identifier)
-            ElseIf index_pos = 1 Then
-                CompanySuccessDic.Add identifier, False
-                coFailure = CompanySuccessDic(identifier)
-            Else
-                api_ticker = IntrinioCompanies(identifier, "ticker")
-                If api_ticker = identifier Then
-                    CompanySuccessDic.Add identifier, False
-                    coFailure = CompanySuccessDic(identifier)
-                Else
-                    api_ticker = IntrinioSecurities(identifier, "ticker")
-                    If api_ticker = identifier Then
-                        CompanySuccessDic.Add identifier, False
-                        coFailure = CompanySuccessDic(identifier)
-                    Else
-                        api_ticker = IntrinioBanks(identifier, "identifier")
-                        If api_ticker = identifier Then
-                            CompanySuccessDic.Add identifier, False
-                            coFailure = CompanySuccessDic(identifier)
-                        Else
-                            CompanySuccessDic.Add identifier, True
-                            coFailure = CompanySuccessDic(identifier)
-                        End If
-                        
-                    End If
-                End If
-                
-            End If
-        Else
-            If APICallsAtLimit = False Then
-                coFailure = CompanySuccessDic(identifier)
-            Else
-                coFailure = False
-            End If
-        End If
+        coFailure = InvalidIdentifier(identifier, item)
     End If
 
     If identifier <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
@@ -1070,7 +1020,6 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
-    Dim index_pos As Integer
     Dim page_number As Integer
     Dim page_size As Integer
     Dim internal_sequence As Integer
@@ -1080,36 +1029,11 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     page_size = 100
     page_number = Ceiling((sequence + 1) / page_size)
     internal_sequence = sequence - ((page_number - 1) * page_size)
-
-    index_pos = InStr(ticker, "$")
-    ticker = VBA.UCase(ticker)
     
+    ticker = VBA.UCase(ticker)
+
     If ticker <> "" And LoginFailure = False And APICallsAtLimit = False Then
-        If CompanySuccessDic.Exists(ticker) = False Then
-            api_ticker = IntrinioCompanies(ticker, "ticker")
-            If api_ticker = ticker Then
-                CompanySuccessDic.Add ticker, False
-                coFailure = CompanySuccessDic(ticker)
-            ElseIf index_pos = 1 Then
-                CompanySuccessDic.Add ticker, False
-                coFailure = CompanySuccessDic(ticker)
-            Else
-                api_ticker = IntrinioSecurities(ticker, "ticker")
-                If api_ticker = ticker Then
-                    CompanySuccessDic.Add ticker, False
-                    coFailure = CompanySuccessDic(ticker)
-                Else
-                    CompanySuccessDic.Add ticker, True
-                    coFailure = CompanySuccessDic(ticker)
-                End If
-            End If
-        Else
-            If APICallsAtLimit = False Then
-                coFailure = CompanySuccessDic(ticker)
-            Else
-                coFailure = False
-            End If
-        End If
+        coFailure = InvalidIdentifier(ticker, item)
     End If
     
     If ticker <> "" And Item <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
@@ -3533,4 +3457,71 @@ Public Function Ceiling(ByVal X As Double, Optional ByVal Factor As Double = 1) 
     ' X is the value you want to round
     ' is the multiple to which you want to round
     Ceiling = (Int(X / Factor) - (X / Factor - Int(X / Factor) > 0)) * Factor
+End Function
+
+Private Function InvalidIdentifier(identifier As String, Item As String) As Boolean
+  Dim api_ticker As String
+  Dim exchange_pos As Integer
+  Dim index_pos As Integer
+  Dim option_length As Boolean
+  Dim executive_pos As Integer
+  
+  exchange_pos = InStr(identifier, ":")
+  index_pos = InStr(identifier, "$")
+  option_length = VBA.Len(identifier) > 16
+  executive_pos = InStr(identifier, "@")
+  
+  If CompanySuccessDic.Exists(identifier) = False Then
+      If identifier = "" Then
+          InvalidIdentifier = False
+      ElseIf VBA.Left(identifier, 5) = "FRED." Then
+          CompanySuccessDic.Add identifier, False
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      ElseIf Item = "api_usage" Then
+          CompanySuccessDic.Add identifier, False
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      ElseIf identifier = "DMD.ERP" Then
+          CompanySuccessDic.Add identifier, False
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      ElseIf exchange_pos > 0 Then
+          CompanySuccessDic.Add identifier, False
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      ElseIf index_pos = 1 Then
+          CompanySuccessDic.Add identifier, False
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      ElseIf executive_pos > 0 Then
+          CompanySuccessDic.Add identifier, False
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      ElseIf option_length = True Then
+          CompanySuccessDic.Add identifier, False
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      Else
+          api_ticker = IntrinioCompanies(identifier, "ticker")
+          If api_ticker = identifier Then
+              CompanySuccessDic.Add identifier, False
+              InvalidIdentifier = CompanySuccessDic(identifier)
+          Else
+              api_ticker = IntrinioSecurities(identifier, "ticker")
+              If api_ticker = identifier Then
+                  CompanySuccessDic.Add identifier, False
+                  InvalidIdentifier = CompanySuccessDic(identifier)
+              Else
+                  api_ticker = IntrinioBanks(identifier, "identifier")
+                  If api_ticker = identifier Then
+                      CompanySuccessDic.Add identifier, False
+                      InvalidIdentifier = CompanySuccessDic(identifier)
+                  Else
+                      CompanySuccessDic.Add identifier, True
+                      InvalidIdentifier = CompanySuccessDic(identifier)
+                  End If
+              End If
+          End If
+      End If
+  Else
+      If APICallsAtLimit = False Then
+          InvalidIdentifier = CompanySuccessDic(identifier)
+      Else
+          InvalidIdentifier = False
+      End If
+  End If
 End Function
