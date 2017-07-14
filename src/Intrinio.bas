@@ -29,7 +29,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://api.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.8.0"
+Public Const Intrinio_Addin_Version = "2.8.1"
 
 Public Sub IntrinioInitialize()
 
@@ -462,7 +462,7 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
     identifier = VBA.UCase(identifier)
     
     If identifier <> "" And LoginFailure = False Then
-        coFailure = InvalidIdentifier(identifier, item)
+        coFailure = InvalidIdentifier(identifier, Item)
     End If
 
     If identifier <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
@@ -1033,7 +1033,7 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
     ticker = VBA.UCase(ticker)
 
     If ticker <> "" And LoginFailure = False And APICallsAtLimit = False Then
-        coFailure = InvalidIdentifier(ticker, item)
+        coFailure = InvalidIdentifier(ticker, Item)
     End If
     
     If ticker <> "" And Item <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
