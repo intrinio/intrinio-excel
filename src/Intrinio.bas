@@ -2294,7 +2294,8 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
     On Error GoTo ErrorHandler
     
     ticker = VBA.UCase(ticker)
-    
+    str_domain_tag = domain_tag
+
     If ticker <> "" And LoginFailure = False Then
         If CompanySuccessDic.Exists(ticker) = False Then
             api_ticker = IntrinioCompanies(ticker, "ticker")
@@ -2435,9 +2436,11 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                     End If
                 End If
             Loop
-                            
-            eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & str_domain_tag
-            
+
+            eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag
+            if str_domain_tag <> "" Then
+                eKey = eKey & "_" & str_domain_tag
+
             If VBA.Right(xbrl_tag, 8) = "Abstract" Then
                 IntrinioReportedFinancials = ""
             ElseIf xbrl_tag = "" Then
@@ -2446,8 +2449,10 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
                 IntrinioReportedFinancials = ReportedFinancialsDic(eKey)
             End If
         ElseIf ReportedFinancialsDic.Exists(Key) = True Then
-            eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag & str_domain_tag
-            
+            eKey = ticker & "_" & statement & "_" & fiscal_year & "_" & fiscal_period & "_" & xbrl_tag
+            if str_domain_tag <> "" Then
+                eKey = eKey & "_" & str_domain_tag
+
             If VBA.Right(xbrl_tag, 8) = "Abstract" Then
                 IntrinioReportedFinancials = ""
             ElseIf xbrl_tag = "" Then
