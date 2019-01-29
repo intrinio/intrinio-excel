@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmIntrinioAPIKeys 
    Caption         =   "Intrinio API Keys"
-   ClientHeight    =   2100
-   ClientLeft      =   42
-   ClientTop       =   -1904
-   ClientWidth     =   8736.001
+   ClientHeight    =   5070
+   ClientLeft      =   45
+   ClientTop       =   -1905
+   ClientWidth     =   6885
    OleObjectBlob   =   "frmIntrinioAPIKeys.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -51,9 +51,13 @@ Private Sub cmdUpdate_Click()
 End Sub
 
 
+Private Sub Label1_Click()
+
+End Sub
+
 Private Sub lblAPIKeys_Click()
     Dim Url As String
-    Url = "https://home.intrinio.com/getting-started-excel-step-3/"
+    Url = "https://intrinio.com/tutorial/excel"
     ActiveWorkbook.FollowHyperlink Url
 End Sub
 
@@ -112,7 +116,7 @@ Private Sub UserForm_Initialize()
         
         Dim oCtl As Control
         For Each oCtl In Me.Controls
-            If TypeOf oCtl Is msforms.TextBox Then
+            If TypeOf oCtl Is MSForms.TextBox Then
                 Set oCCPClass = New ClssCutCopyPaste
                Set oCCPClass.TxtBox = oCtl
                 oCol.Add oCCPClass
@@ -199,3 +203,24 @@ Private Function FileOrDirExists(PathName As String) As Boolean
 
     On Error GoTo 0
 End Function
+
+Sub GetClipBoardText()
+    
+    Dim ClipBoard As MSForms.DataObject, txt As String
+    Set ClipBoard = New MSForms.DataObject
+    ClipBoard.GetFromClipboard
+    txt = ClipBoard.GetText
+    
+    If txt <> "" Then
+        Dim currentControl As Control
+        Set currentControl = Screen.ActiveControl
+        
+        If currentControl.Name = "txtUserAPIKey" Or currentControl.Name = "txtCollabAPIKey" Then
+            Dim textControl As TextBox
+            Set textControl = currentControl
+            textControl.Text = textControl.Text + txt
+        End If
+            
+    End If
+        
+End Sub
