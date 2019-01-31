@@ -28,8 +28,8 @@ Private UpdatePrompt As Boolean
 
 Private APICallsAtLimit As Boolean
 
-Public Const BaseUrl = "https://api.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.8.1"
+Public Const BaseUrl = "https://api-excel.intrinio.com"
+Public Const Intrinio_Addin_Version = "2.8.2"
 
 Public Sub IntrinioInitialize()
 
@@ -40,7 +40,6 @@ Public Sub IntrinioInitialize()
     Dim lLength As Integer
     Dim bString As Integer
     Dim IntrinioUsername As String
-    Dim IntrinioPassword As String
     Dim initialize As Boolean
     Dim login_answer As Integer
     
@@ -68,7 +67,7 @@ Public Sub IntrinioInitialize()
         Call IntrinioRibbon
     #End If
     
-    If iCredentials.Exists("username") = True Or iCredentials.Exists("password") = True Then
+    If iCredentials.Exists("username") = True Then
         iCredentials.RemoveAll
     End If
 
@@ -86,13 +85,14 @@ Public Sub IntrinioInitialize()
             Open sInFolder & Application.PathSeparator & VBA.Trim(sInFile) & ".txt" For Input As #File_Num
             Do Until EOF(1)
                 Line Input #1, textline
-                lLength = Len(textline)
-                bString = InStr(textline, ":")
-                IntrinioUsername = VBA.Left(textline, bString - 1)
-                IntrinioPassword = VBA.Right(textline, lLength - bString)
-                If IntrinioUsername <> "<INTRINIO_USER_API_KEY>" Or IntrinioPassword <> "<INTRINIO_COLLABORATOR_KEY>" Then
+                IntrinioUsername = textline
+                
+                If InStr(IntrinioUsername, ":") > 0 Then
+                    IntrinioUsername = WebHelpers.Base64Encode(IntrinioUsername)
+                End If
+                
+                If IntrinioUsername <> "<INTRINIO_USER_API_KEY>" Then
                     iCredentials.Add "username", IntrinioUsername
-                    iCredentials.Add "password", IntrinioPassword
                     initialize = False
                 Else
                     If LoginFailure = False And APICallsAtLimit = False Then
@@ -101,7 +101,6 @@ Public Sub IntrinioInitialize()
                         login_answer = MsgBox("Unable to authenticate with the Intrinio API", , "Unable to Login")
                     Else
                         iCredentials.Add "username", IntrinioUsername
-                        iCredentials.Add "password", IntrinioPassword
                     End If
                 End If
             Loop
@@ -130,7 +129,9 @@ Public Sub IntrinioInitialize()
     If IntrinioRespCode = 200 Then
         version = IntrinioAddinVersion("version")
         If version <> "429" Or version <> "403" Then
-            If Intrinio_Addin_Version = version Then
+            Dim newVersionAvailable As Boolean
+            newVersionAvailable = AvailableVersionHigher(Intrinio_Addin_Version, version)
+            If newVersionAvailable = False Then
                 LoginFailure = False
                 APICallsAtLimit = False
             Else
@@ -173,6 +174,32 @@ ErrorHandler:
     MsgBox "Unable to connect to the Intrinio API"
 End Sub
 
+Function AvailableVersionHigher(currentVersion As String, availableVersion As String) As Boolean
+
+    AvailableVersionHigher = False
+    
+    Dim currentVersionNumbers() As String
+    currentVersionNumbers = Split(currentVersion, ".")
+    
+    Dim availableVersionNumbers() As String
+    availableVersionNumbers = Split(availableVersion, ".")
+         
+    Dim index As Integer
+    For index = LBound(availableVersionNumbers) To UBound(availableVersionNumbers)
+        
+        If CInt(currentVersionNumbers(index)) < CInt(availableVersionNumbers(index)) Then
+            AvailableVersionHigher = True
+            Exit For
+        End If
+        
+        If CInt(currentVersionNumbers(index)) > CInt(availableVersionNumbers(index)) Then
+            Exit For
+        End If
+        
+    Next
+    
+End Function
+
 Private Function IntrinioCompanies(ticker As String, Item As String)
     On Error GoTo ErrorHandler
     
@@ -182,18 +209,15 @@ Private Function IntrinioCompanies(ticker As String, Item As String)
         If CompanyDic.Exists(ticker) = False Then
             Dim IntrinioClient As New WebClient
             IntrinioClient.BaseUrl = BaseUrl
-            If iCredentials.Exists("username") = False Or iCredentials.Exists("password") = False Or iCredentials("username") = Empty Or iCredentials("password") = Empty Then
+            If iCredentials.Exists("username") = False Or iCredentials("username") = Empty Then
                 Call IntrinioInitialize
             End If
             
             Dim inUsername As String
-            Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
             Set IntrinioClient.Authenticator = Auth
 
             Dim Request As New WebRequest
@@ -273,11 +297,11 @@ Private Function IntrinioSecurities(ticker As String, Item As String)
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+            
+            
             Set IntrinioClient.Authenticator = Auth
 
             Dim Request As New WebRequest
@@ -354,11 +378,11 @@ Private Function IntrinioBanks(identifier As String, Item As String)
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
 
             Dim Request As New WebRequest
@@ -446,13 +470,13 @@ End Sub
 
 Public Function IDP(identifier As String, Item As String)
 Attribute IDP.VB_Description = "Returns a data point for a company based on a selected tag"
-Attribute IDP.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IDP.VB_ProcData.VB_Invoke_Func = " \n20"
     IDP = IntrinioDataPoint(identifier, Item)
 End Function
 
 Public Function IntrinioDataPoint(identifier As String, Item As String)
 Attribute IntrinioDataPoint.VB_Description = "Returns a data point for a company based on a selected tag"
-Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim coFailure As Boolean
     Dim dValue As Double
@@ -524,11 +548,11 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim Request As New WebRequest
@@ -799,7 +823,7 @@ End Sub
 
 Public Function IntrinioHistoricalPrices(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "daily")
 Attribute IntrinioHistoricalPrices.VB_Description = "Returns a historical price data point for a company based on the sequence number"
-Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioHistoricalPrices.VB_ProcData.VB_Invoke_Func = " \n20"
     
     Dim str_start_date As String
     Dim str_end_date As String
@@ -876,11 +900,11 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
              
             Dim Request As New WebRequest
@@ -997,7 +1021,7 @@ End Sub
 
 Public Function IntrinioHistoricalData(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "", Optional data_type As String = "", Optional show_date As Boolean = False)
 Attribute IntrinioHistoricalData.VB_Description = "Returns a historical data point for a company based on the sequence number"
-Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioHistoricalData.VB_ProcData.VB_Invoke_Func = " \n20"
     
     Dim str_start_date As String
     Dim str_end_date As String
@@ -1016,7 +1040,7 @@ End Function
 
 Public Function IHD(ticker As String, Item As String, sequence As Integer, Optional start_date As String = "", Optional end_date As String = "", Optional frequency As String = "", Optional data_type As String = "", Optional show_date As Boolean = False)
 Attribute IHD.VB_Description = "Returns a historical data point for a company based on the sequence number"
-Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -1048,11 +1072,11 @@ Attribute IHD.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
              
             Dim Request As New WebRequest
@@ -1168,7 +1192,7 @@ Sub DescribeIntrinioNews()
 End Sub
 Public Function IntrinioNews(ticker As String, Item As String, sequence As Integer)
 Attribute IntrinioNews.VB_Description = "Returns a historical price data point for a company based on the sequence number"
-Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -1226,11 +1250,11 @@ Attribute IntrinioNews.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
              
             Dim Request As New WebRequest
@@ -1343,7 +1367,7 @@ Public Function IntrinioStandardizedFundamentals(ticker As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioStandardizedFundamentals.VB_Description = "Returns a standardized financial statement fundamental based on a period type and sequence number selected."
-Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -1397,11 +1421,11 @@ Attribute IntrinioStandardizedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim Request As New WebRequest
@@ -1458,7 +1482,7 @@ Public Function IntrinioFundamentals(ticker As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioFundamentals.VB_Description = "Returns a standardized financial statement fundamental based on a period type and sequence number selected."
-Attribute IntrinioFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioFundamentals.VB_ProcData.VB_Invoke_Func = " \n20"
     IntrinioFundamentals = IntrinioStandardizedFundamentals(ticker, statement, period_type, sequence, Item)
 End Function
 
@@ -1507,7 +1531,7 @@ Public Function IntrinioStandardizedTags(ticker As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioStandardizedTags.VB_Description = "Returns a standardized tag for a selected company and financial statement, by selecting a specific tag based on the sequence number selected."
-Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -1561,11 +1585,11 @@ Attribute IntrinioStandardizedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim Request As New WebRequest
@@ -1622,7 +1646,7 @@ Public Function IntrinioTags(ticker As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioTags.VB_Description = "Returns a standardized tag for a selected company and financial statement, by selecting a specific tag based on the sequence number selected."
-Attribute IntrinioTags.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioTags.VB_ProcData.VB_Invoke_Func = " \n20"
     
     IntrinioTags = IntrinioStandardizedTags(ticker, statement, sequence, Item)
                            
@@ -1678,7 +1702,7 @@ Public Function IntrinioStandardizedFinancials(ticker As String, _
                            fiscal_period As String, _
                            tag As String, rounding As String)
 Attribute IntrinioStandardizedFinancials.VB_Description = "Returns a historical standardized financial statement data point for a company, based on the tag, fiscal year and fiscal period."
-Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n20"
                            
     Dim Key As String
     Dim eKey As String
@@ -1748,11 +1772,11 @@ Attribute IntrinioStandardizedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             
@@ -1913,7 +1937,7 @@ Public Function IntrinioFinancials(ticker As String, _
                            tag As String, _
                            Optional rounding As String = "A")
 Attribute IntrinioFinancials.VB_Description = "Returns a historical standardized financial statement data point for a company, based on the tag, fiscal year and fiscal period."
-Attribute IntrinioFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioFinancials.VB_ProcData.VB_Invoke_Func = " \n20"
     
     Dim str_rnd As String
 
@@ -1950,7 +1974,7 @@ Public Function IntrinioReportedFundamentals(ticker As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioReportedFundamentals.VB_Description = "Returns a historical as reported financial statement fundamental based on the period type selected"
-Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -2004,11 +2028,11 @@ Attribute IntrinioReportedFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim Request As New WebRequest
@@ -2089,7 +2113,7 @@ Public Function IntrinioReportedTags(ticker As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioReportedTags.VB_Description = "Returns the as reported XBRL tags and labels for a given ticker, statement, and date or fiscal period."
-Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_ticker As String
     Dim coFailure As Boolean
@@ -2158,11 +2182,11 @@ Attribute IntrinioReportedTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim Request As New WebRequest
@@ -2276,7 +2300,7 @@ Public Function IntrinioReportedFinancials(ticker As String, _
                            xbrl_tag As String, _
                            Optional domain_tag As String = "")
 Attribute IntrinioReportedFinancials.VB_Description = "Returns a historical as reported financial statement data point for a company, based on the xbrl tag, domain tag, fiscal year and fiscal period."
-Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim eKey As String
     Dim nKey As String
@@ -2344,11 +2368,11 @@ Attribute IntrinioReportedFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim BaseRequest As New WebRequest
@@ -2504,7 +2528,7 @@ Public Function IntrinioBankFundamentals(identifier As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioBankFundamentals.VB_Description = "Returns a banks financial statement fundamental based on a period type and sequence number selected."
-Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_identifier As String
     Dim coFailure As Boolean
@@ -2550,11 +2574,11 @@ Attribute IntrinioBankFundamentals.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim Request As New WebRequest
@@ -2633,7 +2657,7 @@ Public Function IntrinioBankTags(identifier As String, _
                            sequence As Integer, _
                            Item As String)
 Attribute IntrinioBankTags.VB_Description = "Returns a bank tag for a selected bank and financial statement, by selecting a specific tag based on the sequence number selected."
-Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim api_identifier As String
     Dim coFailure As Boolean
@@ -2681,11 +2705,11 @@ Attribute IntrinioBankTags.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             Dim Request As New WebRequest
@@ -2769,7 +2793,7 @@ Public Function IntrinioBankFinancials(identifier As String, _
                            tag As String, _
                            Optional rounding As String = "A")
 Attribute IntrinioBankFinancials.VB_Description = "Returns historical financial statement data point for a bank, based on the tag, fiscal year and fiscal period."
-Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
+Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n20"
                            
     Dim Key As String
     Dim eKey As String
@@ -2838,11 +2862,11 @@ Attribute IntrinioBankFinancials.VB_ProcData.VB_Invoke_Func = " \n19"
             Dim inUsername As String
             Dim inPassword As String
             inUsername = iCredentials("username")
-            inPassword = iCredentials("password")
-            Dim Auth As New HttpBasicAuthenticator
-            Auth.Setup _
-                Username:=inUsername, _
-                Password:=inPassword
+            
+            Dim Auth As New HttpBearerAuthenticator
+            Auth.Setup (inUsername)
+                
+                
             Set IntrinioClient.Authenticator = Auth
             
             
@@ -3001,18 +3025,18 @@ Private Function IntrinioAddinVersion(Item As String)
     Dim IntrinioClient As New WebClient
     IntrinioClient.BaseUrl = BaseUrl
     
-    If iCredentials.Exists("username") = False Or iCredentials.Exists("password") = False Or iCredentials("username") = Empty Or iCredentials("password") = Empty Then
+    If iCredentials.Exists("username") = False Or iCredentials("username") = Empty Then
         Call IntrinioInitialize
     End If
     
     Dim inUsername As String
-    Dim inPassword As String
+
     inUsername = iCredentials("username")
-    inPassword = iCredentials("password")
-    Dim Auth As New HttpBasicAuthenticator
-    Auth.Setup _
-        Username:=inUsername, _
-        Password:=inPassword
+    
+    Dim Auth As New HttpBearerAuthenticator
+    Auth.Setup (inUsername)
+        
+        
     Set IntrinioClient.Authenticator = Auth
     
     Dim Request As New WebRequest
@@ -3321,7 +3345,9 @@ Public Sub IntrinioUpdate()
     
     If IntrinioRespCode = 200 Then
         version = IntrinioAddinVersion("version")
-        If Intrinio_Addin_Version = version Then
+        Dim newVersionAvailable As Boolean
+        newVersionAvailable = AvailableVersionHigher(Intrinio_Addin_Version, version)
+        If newVersionAvailable = False Then
             answer = MsgBox("There are no updates available! " & _
                     "Version " & Intrinio_Addin_Version & " is the most recent release of the Intrinio Excel Add-in", vbOKOnly, "Update Intrinio Excel Add-in")
         Else

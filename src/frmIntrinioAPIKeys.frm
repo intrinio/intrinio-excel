@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmIntrinioAPIKeys 
-   Caption         =   "Intrinio API Keys"
-   ClientHeight    =   2100
-   ClientLeft      =   42
-   ClientTop       =   -1904
-   ClientWidth     =   8736.001
+   Caption         =   "Intrinio API Key"
+   ClientHeight    =   3450
+   ClientLeft      =   45
+   ClientTop       =   -1905
+   ClientWidth     =   9030.001
    OleObjectBlob   =   "frmIntrinioAPIKeys.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -21,16 +21,11 @@ Private Sub cmdUpdate_Click()
     Dim File_Num As Long
     Dim sOutFolder As String, sOutFile As String
     Dim IntrinioUsername As String
-    Dim IntrinioPassword As String
     
     IntrinioUsername = VBA.Trim(txtUserAPIKey.Value)
-    IntrinioPassword = VBA.Trim(txtCollabAPIKey.Value)
     
     If IntrinioUsername = "" Then
         IntrinioUsername = "<INTRINIO_USER_API_KEY>"
-    End If
-    If IntrinioPassword = "" Then
-        IntrinioPassword = "<INTRINIO_COLLABORATOR_KEY>"
     End If
     
     On Error Resume Next
@@ -43,19 +38,34 @@ Private Sub cmdUpdate_Click()
         sOutFile = "Intrinio_API_Keys"
         'Specify the correct output folder and the output file name
         Open sOutFolder & Application.PathSeparator & VBA.Trim(sOutFile) & ".txt" For Output As #File_Num
-        Print #1, IntrinioUsername & ":" & IntrinioPassword
+        Print #1, IntrinioUsername
         Close #File_Num
     End With
     Call IntrinioInitialize
     Unload Me
 End Sub
 
-
 Private Sub lblAPIKeys_Click()
     Dim Url As String
-    Url = "https://home.intrinio.com/getting-started-excel-step-3/"
+    Url = "https://intrinio.com/tutorial/excel"
     ActiveWorkbook.FollowHyperlink Url
 End Sub
+
+
+
+Private Sub pasteUserAPIKey_Click()
+    Dim ClipBoard As MSForms.DataObject, txt As String
+    Set ClipBoard = New MSForms.DataObject
+    ClipBoard.GetFromClipboard
+    txt = ClipBoard.GetText
+    
+    If txt <> "" Then
+        txtUserAPIKey.Value = txt
+    End If
+End Sub
+
+
+
 
 Private Sub UserForm_Initialize()
     Dim File_Num As Long
@@ -65,10 +75,10 @@ Private Sub UserForm_Initialize()
     Dim lLength As Integer
     Dim bString As Integer
     Dim IntrinioUsername As String
-    Dim IntrinioPassword As String
     Dim IntrinioAPIKeysExists As Boolean
 
     On Error Resume Next
+    
     sInFolder = ThisWorkbook.path
     
     sInFile = "Intrinio_API_Keys"
@@ -82,26 +92,25 @@ Private Sub UserForm_Initialize()
             i = 1
             Do Until EOF(1)
                 Line Input #1, textline
-                lLength = Len(textline)
-                bString = InStr(textline, ":")
-                IntrinioUsername = VBA.Left(textline, bString - 1)
-                IntrinioPassword = VBA.Right(textline, lLength - bString)
+                IntrinioUsername = textline
             Loop
     
             Close #File_Num
-            If IntrinioUsername <> "<INTRINIO_USER_API_KEY>" Or IntrinioPassword <> "<INTRINIO_COLLABORATOR_KEY>" Then
+            
+            If InStr(IntrinioUsername, ":") > 0 Then
+                IntrinioUsername = WebHelpers.Base64Encode(IntrinioUsername)
+            End If
+            
+            If IntrinioUsername <> "<INTRINIO_USER_API_KEY>" Then
                 txtUserAPIKey.Value = IntrinioUsername
-                txtCollabAPIKey.Value = IntrinioPassword
                 cmdUpdate.Caption = "UPDATE"
             Else
                 txtUserAPIKey.Value = ""
-                txtCollabAPIKey.Value = ""
                 cmdUpdate.Caption = "START"
             End If
         End With
     Else
         txtUserAPIKey.Value = ""
-        txtCollabAPIKey.Value = ""
         cmdUpdate.Caption = "START"
     End If
     #If Mac Then
@@ -112,7 +121,7 @@ Private Sub UserForm_Initialize()
         
         Dim oCtl As Control
         For Each oCtl In Me.Controls
-            If TypeOf oCtl Is msforms.TextBox Then
+            If TypeOf oCtl Is MSForms.TextBox Then
                 Set oCCPClass = New ClssCutCopyPaste
                Set oCCPClass.TxtBox = oCtl
                 oCol.Add oCCPClass
@@ -128,7 +137,6 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
             Dim File_Num As Long
             Dim sOutFolder As String, sOutFile As String
             Dim IntrinioUsername As String
-            Dim IntrinioPassword As String
             Dim sInFolder As String, sInFile As String, textline As String
             Dim i As Integer, lLength As Integer, bString As Integer
             
@@ -141,19 +149,15 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
             i = 1
             Do Until EOF(1)
                 Line Input #1, textline
-                lLength = Len(textline)
-                bString = InStr(textline, ":")
-                IntrinioUsername = VBA.Left(textline, bString - 1)
-                IntrinioPassword = VBA.Right(textline, lLength - bString)
+                IntrinioUsername = textline
             Loop
             
             Close #File_Num
             
-            If IntrinioUsername <> "" Or IntrinioPassword <> "" Then
+            If IntrinioUsername <> "" Then
                 Unload Me
             Else
                 IntrinioUsername = "<INTRINIO_USER_API_KEY>"
-                IntrinioPassword = "<INTRINIO_COLLABORATOR_KEY>"
                 
                 On Error Resume Next
                 sOutFolder = ThisWorkbook.path
@@ -165,7 +169,7 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
                     sOutFile = "Intrinio_API_Keys"
                     'Specify the correct output folder and the output file name
                     Open sOutFolder & Application.PathSeparator & VBA.Trim(sOutFile) & ".txt" For Output As #File_Num
-                    Print #1, IntrinioUsername & ":" & IntrinioPassword
+                    Print #1, IntrinioUsername
                     Close #File_Num
                 End With
                 Call IntrinioInitialize
