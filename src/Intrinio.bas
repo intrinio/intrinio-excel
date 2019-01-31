@@ -86,6 +86,11 @@ Public Sub IntrinioInitialize()
             Do Until EOF(1)
                 Line Input #1, textline
                 IntrinioUsername = textline
+                
+                If InStr(IntrinioUsername, ":") > 0 Then
+                    IntrinioUsername = WebHelpers.Base64Encode(IntrinioUsername)
+                End If
+                
                 If IntrinioUsername <> "<INTRINIO_USER_API_KEY>" Then
                     iCredentials.Add "username", IntrinioUsername
                     initialize = False
