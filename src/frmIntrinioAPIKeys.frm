@@ -65,6 +65,8 @@ Private Sub pasteUserAPIKey_Click()
 End Sub
 
 
+
+
 Private Sub UserForm_Initialize()
     Dim File_Num As Long
     Dim sInFolder As String, sInFile As String
@@ -76,6 +78,7 @@ Private Sub UserForm_Initialize()
     Dim IntrinioAPIKeysExists As Boolean
 
     On Error Resume Next
+    
     sInFolder = ThisWorkbook.path
     
     sInFile = "Intrinio_API_Keys"
@@ -93,6 +96,11 @@ Private Sub UserForm_Initialize()
             Loop
     
             Close #File_Num
+            
+            If InStr(IntrinioUsername, ":") > 0 Then
+                IntrinioUsername = WebHelpers.Base64Encode(IntrinioUsername)
+            End If
+            
             If IntrinioUsername <> "<INTRINIO_USER_API_KEY>" Then
                 txtUserAPIKey.Value = IntrinioUsername
                 cmdUpdate.Caption = "UPDATE"
