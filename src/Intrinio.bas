@@ -284,8 +284,6 @@ End Function
 Private Function IntrinioSecurities(ticker As String, Item As String)
     On Error GoTo ErrorHandler
     
-    ticker = VBA.UCase(ticker)
-    
     If ticker <> "" And LoginFailure = False And APICallsAtLimit = False Then
         If SecuritiesDic.Exists(ticker) = False Then
             Dim IntrinioClient As New WebClient
@@ -480,12 +478,14 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim coFailure As Boolean
     Dim dValue As Double
+    Dim securityTicker As String
     
     On Error GoTo ErrorHandler
     
-    identifier = VBA.UCase(identifier)
+    securityTicker = IntrinioSecurities(identifier, "ticker")
     
-    If identifier <> "" And LoginFailure = False Then
+    If securityTicker <> identifier And identifier <> "" And LoginFailure = False Then
+        identifier = VBA.UCase(identifier)
         coFailure = InvalidIdentifier(identifier, Item)
     End If
 
