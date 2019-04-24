@@ -29,7 +29,7 @@ Private UpdatePrompt As Boolean
 Private APICallsAtLimit As Boolean
 
 Public Const BaseUrl = "https://api-excel.intrinio.com"
-Public Const Intrinio_Addin_Version = "2.8.2"
+Public Const Intrinio_Addin_Version = "2.8.3"
 
 Public Sub IntrinioInitialize()
 
@@ -284,8 +284,6 @@ End Function
 Private Function IntrinioSecurities(ticker As String, Item As String)
     On Error GoTo ErrorHandler
     
-    ticker = VBA.UCase(ticker)
-    
     If ticker <> "" And LoginFailure = False And APICallsAtLimit = False Then
         If SecuritiesDic.Exists(ticker) = False Then
             Dim IntrinioClient As New WebClient
@@ -480,12 +478,14 @@ Attribute IntrinioDataPoint.VB_ProcData.VB_Invoke_Func = " \n20"
     Dim Key As String
     Dim coFailure As Boolean
     Dim dValue As Double
+    Dim securityTicker As String
     
     On Error GoTo ErrorHandler
     
-    identifier = VBA.UCase(identifier)
+    securityTicker = IntrinioSecurities(identifier, "ticker")
     
-    If identifier <> "" And LoginFailure = False Then
+    If securityTicker <> identifier And identifier <> "" And LoginFailure = False Then
+        identifier = VBA.UCase(identifier)
         coFailure = InvalidIdentifier(identifier, Item)
     End If
 
@@ -850,6 +850,7 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
     Dim page_number As Integer
     Dim page_size As Integer
     Dim internal_sequence As Integer
+    Dim securityTicker As String
     
     On Error GoTo ErrorHandler
     
@@ -858,9 +859,23 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
     internal_sequence = sequence - ((page_number - 1) * page_size)
     
     index_pos = InStr(ticker, "$")
-    ticker = VBA.UCase(ticker)
     
     If ticker <> "" And LoginFailure = False Then
+        
+        '' first determine whether to ucase the ticker
+        '' provides backwards-compatible support for preferred securitites
+        
+        securityTicker = IntrinioSecurities(ticker, "ticker")
+    
+        If securityTicker = ticker Then
+            If CompanySuccessDic.Exists(ticker) = False Then
+                CompanySuccessDic.Add ticker, False
+            End If
+            coFailure = CompanySuccessDic(ticker)
+        Else
+            ticker = VBA.UCase(ticker)
+        End If
+        
         If CompanySuccessDic.Exists(ticker) = False Then
             api_ticker = IntrinioCompanies(ticker, "ticker")
             If api_ticker = ticker Then
@@ -890,7 +905,8 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
     
     If ticker <> "" And Item <> "" And LoginFailure = False And APICallsAtLimit = False And coFailure = False Then
         Key = ticker & "_" & start_date & "_" & end_date & "_" & frequency & "_" & page_number
-        If HistoricalPricesDic.Exists(Key) = False Then
+        
+        If HistoricalPricesDic.Exists(Key) = False Or IsNull(HistoricalPricesDic(Key)) Then
             Dim IntrinioClient As New WebClient
             IntrinioClient.BaseUrl = BaseUrl
             If iCredentials.Exists("username") = False Or iCredentials.Exists("password") = False Or iCredentials("username") = Empty Or iCredentials("password") = Empty Then
@@ -929,7 +945,13 @@ Attribute IntrinioPrices.VB_ProcData.VB_Invoke_Func = " \n19"
             Set Response = IntrinioClient.Execute(Request)
             
             If Response.StatusCode = Ok Then
+                If HistoricalPricesDic.Exists(Key) Then
+                    HistoricalPricesDic.Remove Key
+                End If
+                
                 HistoricalPricesDic.Add Key, Response.Data("data")
+
+                
                 IntrinioPrices = HistoricalPricesDic(Key)(internal_sequence + 1)(Item)
                 If IntrinioPrices = Empty Then
                     IntrinioPrices = ""
@@ -3528,6 +3550,7 @@ Private Function InvalidIdentifier(identifier As String, Item As String) As Bool
               InvalidIdentifier = CompanySuccessDic(identifier)
           Else
               api_ticker = IntrinioSecurities(identifier, "ticker")
+              
               If api_ticker = identifier Then
                   CompanySuccessDic.Add identifier, False
                   InvalidIdentifier = CompanySuccessDic(identifier)
