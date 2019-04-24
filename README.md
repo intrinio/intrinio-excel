@@ -15,13 +15,9 @@ Below are the links for the latest versions of the Intrinio Excel Add-in.  Selec
 For all versions of Windows running Excel 2010 or newer.
 **[Download Intrinio_Excel_Addin.exe](https://s3.amazonaws.com/intrinio-production/intrinio-excel-addin/Intrinio_Excel_Addin.exe)**
 
-#### Mac OS X (64-bit)
-For users running OS X and the latest version of 64-bit Excel 2016
-**[Download Intrinio_Excel_Addin.zip](https://s3.amazonaws.com/intrinio-production/intrinio-excel-addin/Intrinio_Excel_Addin-64bit.zip)**
-
-#### Mac OS X (32-bit)
-For users running OS X and older versions of 32-bit Excel 2016 and Excel 2011
-**[Download Intrinio_Excel_Addin.zip](https://s3.amazonaws.com/intrinio-production/intrinio-excel-addin/Intrinio_Excel_Addin-32bit.zip)**
+#### Mac OSX
+For OSX users running Excel 2011 or newer.
+**[Download Intrinio_Excel_Addin.zip](https://s3.amazonaws.com/intrinio-production/intrinio-excel-addin/Intrinio_Excel_Addin.zip)**
 
 #### Github
 **[intrinio-excel](https://github.com/intrinio/intrinio-excel)**
@@ -70,52 +66,13 @@ The Intrinio Excel Add-in has functionality built in it for both the 32-bit and 
 
 # Install Instructions
 
-## Getting your Access Key
-
-During the installation process, you will be prompted for your Access Key username and password. You can obtain those by following these steps. If you already have an Intrinio account, skip to step 5:
-
-1.  Visit [intrinio.com](https://intrinio.com)
-2.  Click sign up and enter your email
-3.  You will receive a verification email with a link to follow
-4.  Click the link in the email and complete your account details
-5.  In your Account Page ([intrinio.com/account](https://intrinio.com/account)), scroll down and note your Access Key username and password
-
-## Windows
-
-1.  Download the latest version of the Intrinio Excel add-in by clicking on the appropriate link above.
-2.  The Intrinio Excel add-in will be saved as an Application in your Downloads folder. Find it there, and double click on it.
-3.  You'll see a pop-up titled "Intrinio Excel Add-in". Check the box to agree to the terms and conditions, then click "Install".
-4.  After a few moments the add-in will be installed, and you can click "Finish".
-5.  Open Microsoft Excel and go to the Intrinio tab on the top ribbon. Select API Keys and a prompt will pop up asking for your API Username and API Password.
-6.  Copy your Access Key username and paste it into the User API Username field in Excel.
-7.  Copy your Access Key password and paste it into the API Password field in Excel.
-8.  Click the "Start" button to begin using the Intrinio API via the Intrinio Excel Add-in!
-9.  You can begin by building your own spreadsheet or by opening a template.
-
-## Mac OS
-
-1.  Download the latest version of the Intrinio Excel add-in by clicking on the appropriate link above.
-2.  Extract the Intrinio Excel add-in zip file to a folder on your hard drive. (On Mac OS X it may automatically extract it for you.)
-3.  NOTE: If you've already done this once OR if you are updating the add-in, be sure to overwrite the old file.
-4.  DO NOT click on Intrinio_Excel_Addin.xlam - you'll select this later.
-5.  Open a BLANK Microsoft Excel worksheet on a Windows or Mac computer.
-6.  Open the Intrinio Excel Add-in through the Excel Add-in manager.  Click on the "Tools" top menu, Add-Ins >> Select, and navigate to the folder where you extracted the Intrinio Excel Add-In and select it.
-7.  Close out the blank Excel spreadsheet
-8.  In the next step: if an alert pops up asking you about macros, be sure to click "Enable Macros" (macros are required for the add-in to work - on Windows you can permanently enable them - check our [Youtube](http://intrin.io/1OPsvMC) for instructions).
-9.  In the next step: if an alert pops up asking you about links, be sure to click "Ignore Links" or "Do Not Update Links" (this only pops up in the template).
-10.  Navigate to your Intrinio_Excel_Addin folder. Open the "Templates" folder, then the "Industrials" folder. Open: IntrinioFinancialData-Industrials.xlsm (YOU MUST OPEN THIS FILE FIRST).
-11.  Copy your Access Key username and paste it into the User API Username field in Excel.
-12.  Copy your Access Key password and paste it into the API Password field in Excel.
-13.  Click the "Start" button to begin using the Intrinio API via the Intrinio Excel Add-in! In this template you can enter a ticker to get started.
-14.  You can use any of the templates provided in the Intrinio Excel Add-In folder that you downloaded, or you can build your own models in Excel.
-
-A whole data buffet is being pulled into Excel. It may take longer than you expect to populate. On Windows computers you will see text at the very bottom of Excel that says "Calculating". This means the data is still downloading. On Mac computers you will see text at the very bottom that says "Ready" when the data has finished downloading. If you click on anything while the data is downloading it will delay the process, so please be patient.
-
-Note: The template is just an illustration of the breadth of data we provide. Click in any cell to see the formula being used to pull that data in. Feel free to use the template if it is helpful to you, but there are no limits to the spreadsheets and models you can create on your own. Once you've installed the add-in, these formulas will work in any workbook in Excel. You can create, save, re-open and edit - and the data will be updated continuously.
+Refer to the **[Intrinio Excel Add-In Tutorial](https://docs.intrinio.com/tutorial/excel)**
 
 # Intrinio Excel Functions
 
 Below are all of the Excel custom functions for accessing the Intrinio API through the Excel add-in.
+
+Complete documentation and a function data-explorer are available in the **[Intrinio Excel Add-In Explorer](https://docs.intrinio.com/api-explorer?method=excel)**
 
 ## IntrinioDataPoint
 
